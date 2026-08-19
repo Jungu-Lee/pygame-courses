@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>랜덤 미로 생성기 | Pygame MAZE_LAYOUT 생성 도구</title>
+<style>
+:root{
+  --bg:#f6f7fb;
+  --surface:#ffffff;
+  --text:#1f2430;
+  --muted:#6b7280;
+  --primary:#2f6fed;
+  --primary-dark:#1f4fc4;
+  --good:#1f9d63;
+  --accent:#f2a900;
+  --border:#e6e8f0;
+  --code-bg:#1c2130;
+  --code-text:#e6e9f2;
+  --radius:12px;
+  --shadow:0 2px 10px rgba(20,30,60,0.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Pretendard","Noto Sans KR","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.7;
+}
+header.top{
+  background:linear-gradient(135deg,#173d8f 0%,#2452c9 55%,#2f6fed 100%);
+  color:#fff;padding:26px 32px;box-shadow:var(--shadow);
+}
+header.top h1{margin:0 0 8px;font-size:22px;font-weight:800;text-shadow:0 1px 3px rgba(0,0,0,0.25);}
+header.top p{margin:0;font-size:13.5px;color:rgba(255,255,255,0.96);font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,0.35);}
+header.top p code{
+  background:rgba(255,255,255,0.18);color:#fff;padding:1px 6px;border-radius:4px;
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12.5px;
+}
+
+main{max-width:960px;margin:0 auto;padding:32px 24px 80px;}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:22px 24px;box-shadow:var(--shadow);
+  margin:18px 0;
+}
+h2{font-size:18px;margin:0 0 12px;}
+p{color:#374151;font-size:14.5px;}
+.muted{color:var(--muted);font-size:13px;}
+
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:6px;}
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--primary);color:#fff;border:none;
+  padding:10px 18px;border-radius:9px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+}
+.btn:hover{background:var(--primary-dark);}
+.btn.ghost{background:#eef2ff;color:var(--primary-dark);}
+.btn.ghost:hover{background:#dfe7ff;}
+.btn.small{padding:7px 12px;font-size:12.5px;}
+
+.status-line{
+  display:flex;align-items:center;gap:8px;font-size:13.5px;
+  padding:10px 14px;border-radius:8px;margin:14px 0 0;
+}
+.status-ok{background:#eefcf4;color:var(--good);}
+
+.maze-wrap{display:flex;justify-content:center;padding:10px 0 4px;overflow-x:auto;}
+#maze-grid{
+  display:grid;
+  grid-template-columns:repeat(18, 26px);
+  grid-template-rows:repeat(9, 26px);
+  gap:1px;background:#c9cede;border:2px solid #0f1830;border-radius:6px;
+  overflow:hidden;
+}
+.cell{width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;}
+.cell.wall{background:#1c2130;}
+.cell.path{background:#f8fafc;}
+.cell.start{background:#22c55e;color:#fff;}
+.cell.goal{background:#ef4444;color:#fff;}
+.cell.solution{background:#fde68a;}
+
+.legend{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:12px;font-size:12.5px;color:var(--muted);}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.swatch{width:14px;height:14px;border-radius:3px;display:inline-block;}
+
+.code-wrapper{position:relative;margin:16px 0;}
+.code-wrapper .filename{
+  background:#12172a;color:#8b92a8;font-family:"SFMono-Regular",Consolas,Menlo,monospace;
+  font-size:12.5px;padding:8px 16px;border-radius:10px 10px 0 0;
+  border-bottom:1px solid #2a3350;display:flex;justify-content:space-between;align-items:center;
+}
+.code-wrapper pre{
+  margin:0;background:var(--code-bg);color:var(--code-text);
+  padding:18px;overflow-x:auto;border-radius:0 0 10px 10px;
+  font-size:13.5px;font-family:"SFMono-Regular",Consolas,Menlo,monospace;line-height:1.6;
+}
+.copy-btn{
+  background:#2a3350;color:#e6e9f2;border:none;
+  padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-family:inherit;
+}
+.copy-btn:hover{background:#38416a;}
+.copy-btn.copied{background:var(--good);}
+
+footer.page-footer{
+  text-align:center;color:var(--muted);font-size:12.5px;
+  padding:30px 20px 50px;border-top:1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>🧩 랜덤 미로 생성기</h1>
+  <p>Pygame 미로 탈출 과제용 <code>MAZE_LAYOUT</code> 데이터를 무작위로 생성합니다. 크기는 항상 18×9로 고정되며, 시작(S)에서 목표(G)까지 경로가 반드시 존재하도록 알고리즘으로 보장합니다.</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>미리보기</h2>
+    <p class="muted" style="margin-top:-6px;">파란 사각형(■)은 벽, 밝은 칸은 통로입니다. 초록 <b>S</b>가 시작, 빨강 <b>G</b>가 목표 지점입니다.</p>
+
+    <div class="controls">
+      <button class="btn" onclick="generateAndRender()">🔀 새 미로 생성</button>
+      <button class="btn ghost" onclick="toggleSolution()" id="solution-btn">👁 정답 경로 보기</button>
+    </div>
+
+    <div class="maze-wrap">
+      <div id="maze-grid"></div>
+    </div>
+
+    <div class="legend">
+      <span><span class="swatch" style="background:#1c2130;"></span>벽 (#)</span>
+      <span><span class="swatch" style="background:#f8fafc;border:1px solid #ddd;"></span>통로 (.)</span>
+      <span><span class="swatch" style="background:#22c55e;"></span>시작 (S)</span>
+      <span><span class="swatch" style="background:#ef4444;"></span>목표 (G)</span>
+      <span><span class="swatch" style="background:#fde68a;"></span>정답 경로</span>
+    </div>
+
+    <div id="status" class="status-line status-ok">
+      ✅ BFS로 검증했습니다 — 시작에서 목표까지 경로가 존재합니다. (최단 경로: <span id="path-len">-</span>칸)
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>파이썬 코드로 복사하기</h2>
+    <p class="muted" style="margin-top:-6px;">아래 <code>MAZE_LAYOUT</code>을 그대로 복사해서 Pygame 코드의 미로 데이터로 사용하세요.</p>
+    <div class="code-wrapper">
+      <div class="filename">
+        MAZE_LAYOUT
+        <button class="copy-btn" onclick="copyMazeCode()">복사</button>
+      </div>
+      <pre id="maze-code"></pre>
+    </div>
+  </div>
+
+</main>
+
+<footer class="page-footer">
+  대구과학고 학생을 위한 Pygame 실습 도구 · 제작자: 대구과학고등학교 교사 이준구
+</footer>
+
+<script>
+const ROWS = 9;
+const COLS = 18;
+
+// 미로 "노드(칸)"가 놓이는 실제 좌표들.
+// 안쪽 영역(1~7행, 1~16열)에 2칸 간격으로 노드를 배치하고,
+// 노드 사이의 벽을 무작위로 뚫어(재귀 백트래킹) 스패닝 트리를 만든다.
+// -> 스패닝 트리이므로 "모든 노드가 서로 연결되어 있음"이 알고리즘 구조상 항상 보장된다.
+const CELL_ROWS = [1, 3, 5, 7];                       // 4개 (안쪽 7행에 정확히 맞음)
+const CELL_COLS = [1, 3, 5, 7, 9, 11, 13, 15];        // 8개 (16열 중 15까지 사용, 16열은 G 전용 통로)
+
+let currentGrid = null;      // 문자 배열(2차원) - 최종 미로
+let currentSolution = null;  // BFS로 구한 S->G 최단 경로 좌표 리스트
+let showingSolution = false;
+
+function makeEmptyGrid(){
+  const grid = [];
+  for(let r = 0; r < ROWS; r++){
+    grid.push(new Array(COLS).fill('#'));  // 일단 전부 벽으로 채움
+  }
+  return grid;
+}
+
+function shuffle(array){
+  // Fisher-Yates 셔플: 방향 순서를 무작위로 섞어서 매번 다른 미로가 나오게 한다.
+  for(let i = array.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+
+function generateMaze(){
+  const grid = makeEmptyGrid();
+  const numRows = CELL_ROWS.length;  // 4
+  const numCols = CELL_COLS.length;  // 8
+
+  // 모든 노드 위치를 우선 통로로 표시
+  for(let i = 0; i < numRows; i++){
+    for(let j = 0; j < numCols; j++){
+      grid[CELL_ROWS[i]][CELL_COLS[j]] = '.';
+    }
+  }
+
+  // ----- 재귀 백트래킹(랜덤 DFS)으로 스패닝 트리 생성 -----
+  const visited = Array.from({length: numRows}, () => new Array(numCols).fill(false));
+  const stack = [];
+
+  const start_i = 0, start_j = 0;   // 논리 좌표 (0,0) == 실제 좌표 (1,1) == S 위치
+  visited[start_i][start_j] = true;
+  stack.push([start_i, start_j]);
+
+  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];  // 위, 아래, 왼쪽, 오른쪽 (논리 좌표 기준 1칸)
+
+  while(stack.length > 0){
+    const [ci, cj] = stack[stack.length - 1];
+    const neighbors = [];
+
+    shuffle(DIRS.slice()).forEach(([di, dj]) => {
+      const ni = ci + di, nj = cj + dj;
+      if(ni >= 0 && ni < numRows && nj >= 0 && nj < numCols && !visited[ni][nj]){
+        neighbors.push([ni, nj, di, dj]);
+      }
+    });
+
+    if(neighbors.length > 0){
+      // 방문하지 않은 이웃 중 하나를 무작위로 골라 그 사이의 벽을 뚫는다.
+      const [ni, nj, di, dj] = neighbors[Math.floor(Math.random() * neighbors.length)];
+      const wallRow = CELL_ROWS[ci] + di;  // 두 노드 사이(실제 좌표 기준 딱 중간)의 벽 칸
+      const wallCol = CELL_COLS[cj] + dj;
+      grid[wallRow][wallCol] = '.';         // 벽 제거 -> 통로로 변경
+      visited[ni][nj] = true;
+      stack.push([ni, nj]);
+    } else {
+      stack.pop();  // 더 갈 곳이 없으면 되돌아간다(백트래킹)
+    }
+  }
+
+  // ----- 시작(S) / 목표(G) 배치 -----
+  const sRow = CELL_ROWS[0], sCol = CELL_COLS[0];                 // (1, 1)
+  const gRow = CELL_ROWS[numRows - 1];                             // 7
+  const gCol = CELL_COLS[numCols - 1] + 1;                         // 15 + 1 = 16
+
+  // G는 마지막 노드(7,15) 바로 오른쪽 칸(7,16)에 배치한다.
+  // 두 칸이 벽 하나 없이 바로 붙어있으므로(사이에 별도 벽 칸이 없음),
+  // (7,15)가 스패닝 트리에 포함된 통로인 이상 (7,16)도 자동으로 연결된다.
+  grid[gRow][gCol] = '.';
+
+  grid[sRow][sCol] = 'S';
+  grid[gRow][gCol] = 'G';
+
+  return grid;
+}
+
+function bfsSolve(grid){
+  // S와 G의 좌표 찾기
+  let start = null, goal = null;
+  for(let r = 0; r < ROWS; r++){
+    for(let c = 0; c < COLS; c++){
+      if(grid[r][c] === 'S') start = [r, c];
+      else if(grid[r][c] === 'G') goal = [r, c];
+    }
+  }
+
+  const visited = Array.from({length: ROWS}, () => new Array(COLS).fill(false));
+  const prev = {};
+  const queue = [start];
+  visited[start[0]][start[1]] = true;
+
+  const DIRS = [[-1,0],[1,0],[0,-1],[0,1]];
+
+  while(queue.length > 0){
+    const [r, c] = queue.shift();
+    if(r === goal[0] && c === goal[1]) break;
+
+    for(const [dr, dc] of DIRS){
+      const nr = r + dr, nc = c + dc;
+      if(nr >= 0 && nr < ROWS && nc >= 0 && nc < COLS &&
+         grid[nr][nc] !== '#' && !visited[nr][nc]){
+        visited[nr][nc] = true;
+        prev[`${nr},${nc}`] = `${r},${c}`;
+        queue.push([nr, nc]);
+      }
+    }
+  }
+
+  if(!visited[goal[0]][goal[1]]) return null;  // 이론상 항상 도달 가능하지만 안전하게 체크
+
+  // 경로 역추적
+  const path = [];
+  let cur = `${goal[0]},${goal[1]}`;
+  const startKey = `${start[0]},${start[1]}`;
+  while(cur !== startKey){
+    const [r, c] = cur.split(',').map(Number);
+    path.push([r, c]);
+    cur = prev[cur];
+  }
+  path.push(start);
+  path.reverse();
+  return path;
+}
+
+function renderMaze(grid, solutionPath, highlightSolution){
+  const container = document.getElementById('maze-grid');
+  container.innerHTML = '';
+
+  const solutionSet = new Set((solutionPath || []).map(([r,c]) => `${r},${c}`));
+
+  for(let r = 0; r < ROWS; r++){
+    for(let c = 0; c < COLS; c++){
+      const ch = grid[r][c];
+      const div = document.createElement('div');
+      div.className = 'cell';
+      if(ch === '#'){
+        div.classList.add('wall');
+      } else if(ch === 'S'){
+        div.classList.add('start');
+        div.textContent = 'S';
+      } else if(ch === 'G'){
+        div.classList.add('goal');
+        div.textContent = 'G';
+      } else {
+        div.classList.add('path');
+        if(highlightSolution && solutionSet.has(`${r},${c}`)){
+          div.classList.remove('path');
+          div.classList.add('solution');
+        }
+      }
+      container.appendChild(div);
+    }
+  }
+}
+
+function gridToPythonCode(grid){
+  const lines = grid.map(row => `    "${row.join('')}",`);
+  return `MAZE_LAYOUT = [\n${lines.join('\n')}\n]`;
+}
+
+function generateAndRender(){
+  currentGrid = generateMaze();
+  currentSolution = bfsSolve(currentGrid);
+  showingSolution = false;
+  document.getElementById('solution-btn').textContent = '👁 정답 경로 보기';
+
+  renderMaze(currentGrid, currentSolution, false);
+  document.getElementById('path-len').textContent = currentSolution ? (currentSolution.length - 1) : '?';
+  document.getElementById('maze-code').textContent = gridToPythonCode(currentGrid);
+}
+
+function toggleSolution(){
+  showingSolution = !showingSolution;
+  document.getElementById('solution-btn').textContent = showingSolution ? '🙈 정답 경로 숨기기' : '👁 정답 경로 보기';
+  renderMaze(currentGrid, currentSolution, showingSolution);
+}
+
+function copyMazeCode(){
+  const text = document.getElementById('maze-code').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    const orig = btn.textContent;
+    btn.textContent = '복사됨!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+// 페이지가 열리자마자 미로 하나를 자동으로 생성해서 보여준다.
+generateAndRender();
+</script>
+
+</body>
+</html>
