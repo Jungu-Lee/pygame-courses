@@ -6,6 +6,7 @@
 <title>대구과학고 학생을 위한 PYGAME INVADERS — 파이게임으로 배우는 슈팅 게임 개발</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,500,0,0&display=block" rel="stylesheet">
 <style>
   :root{
     --bg:#f7f5ee;
@@ -430,10 +431,49 @@
     padding:16px 20px;
     margin:26px 0;
     border-radius:var(--radius);
+    position:relative;
   }
   .mission .mlabel{
     font-family:'Press Start 2P';font-size:10px;color:var(--green);
     margin-bottom:10px;
+  }
+  .hint-btn{
+    position:absolute;right:14px;bottom:14px;
+    width:30px;height:30px;border-radius:50%;
+    background:var(--bg-panel);
+    border:1.5px solid var(--green-dim);
+    color:var(--green);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    transition:all .15s ease;
+    padding:0;
+  }
+  .hint-btn:hover{background:var(--green);color:#fff;border-color:var(--green);}
+  .hint-btn[aria-expanded="true"]{background:var(--green);color:#fff;}
+  .material-symbols-outlined{
+    font-family:'Material Symbols Outlined';
+    font-weight:normal;
+    font-style:normal;
+    font-size:18px;
+    line-height:1;
+    letter-spacing:normal;
+    text-transform:none;
+    white-space:nowrap;
+    word-wrap:normal;
+    direction:ltr;
+    -webkit-font-smoothing:antialiased;
+    font-variation-settings:'FILL' 0,'wght' 500,'GRAD' 0,'opsz' 24;
+  }
+  .hint-panel{
+    display:none;
+    margin-top:20px;
+    padding-top:18px;
+    border-top:1px dashed var(--green-dim);
+  }
+  .hint-panel.open{display:block;}
+  .hint-panel-label{
+    font-family:'Press Start 2P';font-size:10px;color:var(--amber);
+    margin-bottom:14px;
   }
 
   .divider{
@@ -780,9 +820,9 @@ pip install pygame-ce</code></pre>
         <pre><code><span class="kw">import</span> os
 
 <span class="cm"># 이 main.py 파일이 들어있는 폴더의 절대 경로</span>
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)
-SND_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"sounds"</span>)</code></pre>
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   <span class="cm"># __file__: 현재 파일 경로 → 절대경로 변환 → 폴더만 추출</span>
+IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)   <span class="cm"># BASE_DIR/assets/images</span>
+SND_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"sounds"</span>)   <span class="cm"># BASE_DIR/assets/sounds</span></code></pre>
 
         <div class="api-item">
           <div class="api-sig">os.path.abspath(path)</div>
@@ -892,15 +932,15 @@ SND_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="
 
 pygame.init()  <span class="cm"># ① 파이게임 초기화 (반드시 가장 먼저 호출)</span>
 
-WIDTH, HEIGHT = <span class="nm">480</span>, <span class="nm">600</span>
+WIDTH, HEIGHT = <span class="nm">480</span>, <span class="nm">600</span>   <span class="cm"># 게임 화면 가로/세로 픽셀 크기</span>
 screen = pygame.display.set_mode((WIDTH, HEIGHT))  <span class="cm"># ② 해상도 설정</span>
-pygame.display.set_caption(<span class="st">"스페이스 인베이더"</span>)
+pygame.display.set_caption(<span class="st">"스페이스 인베이더"</span>)   <span class="cm"># 창 상단 제목</span>
 pygame.key.stop_text_input()  <span class="cm"># 한글 등 IME가 키 입력을 가로채지 않도록 끄기</span>
 
 clock = pygame.time.Clock()  <span class="cm"># ③ 프레임 속도 조절기</span>
-FPS = <span class="nm">60</span>
+FPS = <span class="nm">60</span>   <span class="cm"># 목표 초당 프레임 수</span>
 
-running = <span class="kw">True</span>
+running = <span class="kw">True</span>   <span class="cm"># 이 값이 False가 되면 while 루프가 끝나고 게임이 종료됨</span>
 <span class="kw">while</span> running:
     <span class="cm"># 1) 이벤트 처리</span>
     <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
@@ -1064,14 +1104,14 @@ pygame.quit()</code></pre>
 
       <pre><span class="filename">main.py (일부)</span><code><span class="cm"># 게임 루프 위쪽에 추가</span>
 player = pygame.Rect(<span class="nm">220</span>, <span class="nm">540</span>, <span class="nm">40</span>, <span class="nm">30</span>)  <span class="cm"># x, y, width, height</span>
-player_speed = <span class="nm">6</span>
+player_speed = <span class="nm">6</span>   <span class="cm"># 한 프레임에 이동할 픽셀 수</span>
 
 <span class="cm"># --- while 루프 안, 이벤트 처리 다음 ---</span>
-keys = pygame.key.get_pressed()
-<span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> player.left > <span class="nm">0</span>:
-    player.x -= player_speed
-<span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> player.right < WIDTH:
-    player.x += player_speed
+keys = pygame.key.get_pressed()   <span class="cm"># 현재 눌려있는 모든 키 상태를 한 번에 가져옴</span>
+<span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> player.left > <span class="nm">0</span>:   <span class="cm"># 왼쪽 키 + 아직 화면 왼쪽 끝이 아니면</span>
+    player.x -= player_speed   <span class="cm"># x좌표 감소 = 왼쪽 이동</span>
+<span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> player.right < WIDTH:   <span class="cm"># 오른쪽 키 + 아직 화면 오른쪽 끝이 아니면</span>
+    player.x += player_speed   <span class="cm"># x좌표 증가 = 오른쪽 이동</span>
 
 <span class="cm"># --- 그리기 단계에 추가 ---</span>
 pygame.draw.rect(screen, (<span class="nm">61</span>, <span class="nm">255</span>, <span class="nm">154</span>), player)</code></pre>
@@ -1194,16 +1234,16 @@ pygame.draw.line(screen, GREEN, (<span class="nm">0</span>,<span class="nm">50</
       <pre><span class="filename">이미지 로드</span><code><span class="kw">try</span>:
     player_img = pygame.image.load(
         os.path.join(IMG_DIR, <span class="st">"player.png"</span>)
-    ).convert_alpha()
-    player_img = pygame.transform.scale(player_img, (<span class="nm">40</span>, <span class="nm">30</span>))
-<span class="kw">except</span> FileNotFoundError:
+    ).convert_alpha()   <span class="cm"># 이미지 로드 + 투명도 최적화</span>
+    player_img = pygame.transform.scale(player_img, (<span class="nm">40</span>, <span class="nm">30</span>))   <span class="cm"># 원하는 크기로 조절</span>
+<span class="kw">except</span> FileNotFoundError:   <span class="cm"># 파일이 없으면</span>
     player_img = <span class="kw">None</span>  <span class="cm"># 이미지가 없으면 이후 도형으로 대체해서 그림</span>
 
 <span class="cm"># --- 그리기 단계 ---</span>
-<span class="kw">if</span> player_img:
-    screen.blit(player_img, player)
-<span class="kw">else</span>:
-    pygame.draw.rect(screen, GREEN, player)</code></pre>
+<span class="kw">if</span> player_img:   <span class="cm"># 이미지 로드에 성공했으면</span>
+    screen.blit(player_img, player)   <span class="cm"># 이미지를 player 위치에 그리기</span>
+<span class="kw">else</span>:   <span class="cm"># 이미지가 없으면(None)</span>
+    pygame.draw.rect(screen, GREEN, player)   <span class="cm"># 대신 초록 사각형으로 표시</span></code></pre>
 
       <div class="feature">
         <div class="flabel">이미지 출력 · pygame.image / blit</div>
@@ -1246,12 +1286,12 @@ pygame.draw.line(screen, GREEN, (<span class="nm">0</span>,<span class="nm">50</
       </div>
 
       <h3>텍스트(글자) 표시하기</h3>
-      <pre><span class="filename">폰트 렌더링</span><code>pygame.font.init()
-font = pygame.font.SysFont(<span class="st">"consolas"</span>, <span class="nm">24</span>)
+      <pre><span class="filename">폰트 렌더링</span><code>pygame.font.init()   <span class="cm"># 폰트 시스템 초기화</span>
+font = pygame.font.SysFont(<span class="st">"consolas"</span>, <span class="nm">24</span>)   <span class="cm"># 폰트 객체는 한 번만 만들어 재사용</span>
 
 <span class="cm"># --- 그리기 단계 ---</span>
-score_surface = font.render(<span class="st">f"SCORE {score}"</span>, <span class="kw">True</span>, GREEN)
-screen.blit(score_surface, (<span class="nm">10</span>, <span class="nm">10</span>))</code></pre>
+score_surface = font.render(<span class="st">f"SCORE {score}"</span>, <span class="kw">True</span>, GREEN)   <span class="cm"># 문자열 → 이미지(Surface)로 변환</span>
+screen.blit(score_surface, (<span class="nm">10</span>, <span class="nm">10</span>))   <span class="cm"># 화면 좌상단에 그리기</span></code></pre>
 
       <div class="feature">
         <div class="flabel">폰트 렌더링 · pygame.font</div>
@@ -1317,6 +1357,80 @@ screen.blit(score_surface, (<span class="nm">10</span>, <span class="nm">10</spa
         글자가 안 보인다면 이미지보다 먼저 그리지 않았는지부터 확인하세요.
       </div>
 
+      <h3>메모리와 화면, 무엇이 먼저 바뀌는가</h3>
+      <p>
+        지금까지 배운 <code class="inline">fill</code>·<code class="inline">draw</code>·<code class="inline">blit</code>은
+        전부 <b>모니터가 아니라 메모리 속 화면 버퍼(<code class="inline">screen</code>)</b>를 바꾸는 작업입니다.
+        실제로 사용자 눈에 보이는 모니터는 <code class="inline">pygame.display.flip()</code>을 호출하는 순간에만 바뀝니다.
+      </p>
+
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono', monospace" style="width:100%;height:auto;">
+          <defs>
+            <marker id="mem-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--dim)"/>
+            </marker>
+            <marker id="flip-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--amber)"/>
+            </marker>
+          </defs>
+
+          <!-- 메모리 컨테이너 -->
+          <rect x="20" y="60" width="480" height="310" rx="8" fill="none" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 4"/>
+          <rect x="26" y="50" width="220" height="20" fill="var(--bg-panel)"/>
+          <text x="32" y="64" font-size="12" fill="var(--dim)">메모리(RAM) 속 작업 공간</text>
+
+          <!-- 4가지 소스 박스 -->
+          <rect x="40" y="90" width="210" height="56" rx="5" fill="var(--bg-panel)" stroke="var(--green)" stroke-width="2"/>
+          <text x="145" y="112" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--green)">배경색</text>
+          <text x="145" y="132" text-anchor="middle" font-size="10.5" fill="var(--dim)">screen.fill(color)</text>
+
+          <rect x="270" y="90" width="210" height="56" rx="5" fill="var(--bg-panel)" stroke="var(--green)" stroke-width="2"/>
+          <text x="375" y="112" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--green)">도형</text>
+          <text x="375" y="132" text-anchor="middle" font-size="10.5" fill="var(--dim)">pygame.draw.rect(...)</text>
+
+          <rect x="40" y="170" width="210" height="56" rx="5" fill="var(--bg-panel)" stroke="var(--magenta)" stroke-width="2"/>
+          <text x="145" y="192" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--magenta)">이미지</text>
+          <text x="145" y="212" text-anchor="middle" font-size="10.5" fill="var(--dim)">screen.blit(img, pos)</text>
+
+          <rect x="270" y="170" width="210" height="56" rx="5" fill="var(--bg-panel)" stroke="var(--magenta)" stroke-width="2"/>
+          <text x="375" y="192" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--magenta)">글자</text>
+          <text x="375" y="212" text-anchor="middle" font-size="10.5" fill="var(--dim)">screen.blit(text_surf, pos)</text>
+
+          <!-- 수렴 화살표 -->
+          <line x1="145" y1="146" x2="180" y2="280" stroke="var(--dim)" stroke-width="1.5" marker-end="url(#mem-arrow)"/>
+          <line x1="145" y1="226" x2="180" y2="280" stroke="var(--dim)" stroke-width="1.5" marker-end="url(#mem-arrow)"/>
+          <line x1="375" y1="146" x2="380" y2="280" stroke="var(--dim)" stroke-width="1.5" marker-end="url(#mem-arrow)"/>
+          <line x1="375" y1="226" x2="380" y2="280" stroke="var(--dim)" stroke-width="1.5" marker-end="url(#mem-arrow)"/>
+
+          <!-- screen Surface 박스 -->
+          <rect x="110" y="280" width="340" height="66" rx="6" fill="var(--bg-panel)" stroke="var(--text)" stroke-width="2"/>
+          <text x="280" y="308" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text)">screen</text>
+          <text x="280" y="328" text-anchor="middle" font-size="10.5" fill="var(--dim)">메모리 속 화면 버퍼 (아직 안 보임)</text>
+
+          <!-- flip() 화살표 -->
+          <line x1="500" y1="313" x2="558" y2="313" stroke="var(--amber)" stroke-width="3" marker-end="url(#flip-arrow)"/>
+          <text x="529" y="298" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--amber)">flip()</text>
+
+          <!-- 실제 화면 컨테이너 -->
+          <rect x="560" y="248" width="230" height="134" rx="8" fill="none" stroke="var(--green)" stroke-width="2"/>
+          <rect x="580" y="238" width="150" height="20" fill="var(--bg-panel)"/>
+          <text x="588" y="252" font-size="12" fill="var(--green)">실제 화면(모니터)</text>
+          <rect x="580" y="270" width="190" height="90" rx="4" fill="var(--bg)" stroke="var(--line)" stroke-width="1.5"/>
+          <path d="M 675 300 L 655 332 L 695 332 Z" fill="var(--green)" opacity="0.8"/>
+          <text x="675" y="352" text-anchor="middle" font-size="10" fill="var(--dim)">사용자가 보는 화면</text>
+
+          <!-- 경고 문구 -->
+          <text x="410" y="405" text-anchor="middle" font-size="12" fill="var(--magenta)">⚠ flip()을 호출하기 전까지는 모니터 화면이 바뀌지 않습니다</text>
+        </svg>
+        <p class="diagram-caption">
+          <code class="inline">fill</code>·<code class="inline">draw</code>·<code class="inline">blit</code>은 모두
+          <b>메모리 속 <code class="inline">screen</code> Surface</b>에만 흔적을 남깁니다. 이 상태로 아무리 많이 그려도
+          모니터는 그대로입니다. <code class="inline">pygame.display.flip()</code>이 호출되는 순간, 메모리에
+          쌓아둔 내용이 <b>한 번에 통째로</b> 실제 화면으로 복사되어 사용자 눈에 보이게 됩니다.
+        </p>
+      </div>
+
       <div class="mission">
         <div class="mlabel">✔ 확인 미션</div>
         화면 상단에 "SCORE 0" 문구를 항상 표시하고, 우주선 이미지를 넣거나(선택) 도형으로 대체해 정상 표시되는지 확인하세요.
@@ -1338,25 +1452,25 @@ screen.blit(score_surface, (<span class="nm">10</span>, <span class="nm">10</spa
       </p>
 
       <pre><span class="filename">main.py (일부)</span><code>bullets = []  <span class="cm"># 화면에 떠 있는 총알들의 Rect를 담는 리스트</span>
-BULLET_SPEED = <span class="nm">10</span>
+BULLET_SPEED = <span class="nm">10</span>   <span class="cm"># 한 프레임에 이동하는 픽셀 수</span>
 
 <span class="cm"># --- 이벤트 처리 단계 ---</span>
 <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
     <span class="kw">if</span> event.type == pygame.QUIT:
         running = <span class="kw">False</span>
-    <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_SPACE:
-        bullet = pygame.Rect(player.centerx - <span class="nm">2</span>, player.top, <span class="nm">4</span>, <span class="nm">12</span>)
-        bullets.append(bullet)
+    <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_SPACE:   <span class="cm"># 스페이스바를 누른 그 순간에만</span>
+        bullet = pygame.Rect(player.centerx - <span class="nm">2</span>, player.top, <span class="nm">4</span>, <span class="nm">12</span>)   <span class="cm"># 우주선 코 끝에 4×12 사각형 생성</span>
+        bullets.append(bullet)   <span class="cm"># 리스트 맨 끝에 추가</span>
 
 <span class="cm"># --- 상태 업데이트 단계 ---</span>
 <span class="kw">for</span> bullet <span class="kw">in</span> bullets[:]:      <span class="cm"># 복사본을 순회해야 삭제 중 오류가 없음</span>
-    bullet.y -= BULLET_SPEED
-    <span class="kw">if</span> bullet.bottom < <span class="nm">0</span>:
+    bullet.y -= BULLET_SPEED   <span class="cm"># 위로 이동</span>
+    <span class="kw">if</span> bullet.bottom < <span class="nm">0</span>:   <span class="cm"># 화면 위쪽을 완전히 벗어났으면</span>
         bullets.remove(bullet)   <span class="cm"># 화면 밖으로 나가면 목록에서 제거</span>
 
 <span class="cm"># --- 그리기 단계 ---</span>
-<span class="kw">for</span> bullet <span class="kw">in</span> bullets:
-    pygame.draw.rect(screen, GREEN, bullet)</code></pre>
+<span class="kw">for</span> bullet <span class="kw">in</span> bullets:   <span class="cm"># 남아있는 총알을 전부 순회하며</span>
+    pygame.draw.rect(screen, GREEN, bullet)   <span class="cm"># 각각 그리기</span></code></pre>
 
       <div class="feature">
         <div class="flabel">이벤트 제어 · KEYDOWN</div>
@@ -1423,15 +1537,15 @@ BULLET_SPEED = <span class="nm">10</span>
 
       <h3>충돌 확인하기</h3>
       <pre><span class="filename">충돌 처리</span><code>enemy = pygame.Rect(<span class="nm">100</span>, <span class="nm">80</span>, <span class="nm">36</span>, <span class="nm">28</span>)  <span class="cm"># 임시 적 하나</span>
-score = <span class="nm">0</span>
+score = <span class="nm">0</span>   <span class="cm"># 점수 변수</span>
 
-<span class="kw">for</span> bullet <span class="kw">in</span> bullets[:]:
-    bullet.y -= BULLET_SPEED
-    <span class="kw">if</span> bullet.colliderect(enemy):
-        bullets.remove(bullet)
-        score += <span class="nm">10</span>
-    <span class="kw">elif</span> bullet.bottom < <span class="nm">0</span>:
-        bullets.remove(bullet)</code></pre>
+<span class="kw">for</span> bullet <span class="kw">in</span> bullets[:]:   <span class="cm"># 복사본을 순회 (삭제 안전)</span>
+    bullet.y -= BULLET_SPEED   <span class="cm"># 위로 이동</span>
+    <span class="kw">if</span> bullet.colliderect(enemy):   <span class="cm"># 총알이 적과 겹치면</span>
+        bullets.remove(bullet)   <span class="cm"># 총알 제거</span>
+        score += <span class="nm">10</span>   <span class="cm"># 점수 획득</span>
+    <span class="kw">elif</span> bullet.bottom < <span class="nm">0</span>:   <span class="cm"># 맞지 않고 화면 위로 나갔으면</span>
+        bullets.remove(bullet)   <span class="cm"># 그냥 제거</span></code></pre>
 
       <div class="feature">
         <div class="flabel">기초 충돌 · colliderect</div>
@@ -1564,48 +1678,48 @@ score = <span class="nm">0</span>
 
       <pre><span class="filename">sprites.py</span><code><span class="kw">import</span> os, pygame
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   <span class="cm"># 이 sprites.py가 있는 폴더의 절대 경로</span>
+IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)   <span class="cm"># 이미지 폴더 경로</span>
 
 <span class="kw">def</span> <span class="fn">load_image</span>(filename, size, fallback_color):
     <span class="cm"># 05-B에서 내려받은 PNG를 불러오되, 없으면 단색 사각형으로 대체</span>
     <span class="kw">try</span>:
-        img = pygame.image.load(os.path.join(IMG_DIR, filename)).convert_alpha()
-        <span class="kw">return</span> pygame.transform.scale(img, size)
-    <span class="kw">except</span> (pygame.error, FileNotFoundError):
-        surf = pygame.Surface(size, pygame.SRCALPHA)
-        surf.fill(fallback_color)
-        <span class="kw">return</span> surf
+        img = pygame.image.load(os.path.join(IMG_DIR, filename)).convert_alpha()   <span class="cm"># 이미지 로드 + 투명도 최적화</span>
+        <span class="kw">return</span> pygame.transform.scale(img, size)   <span class="cm"># 지정 크기로 조절해서 반환</span>
+    <span class="kw">except</span> (pygame.error, FileNotFoundError):   <span class="cm"># 파일이 없거나 손상됐으면</span>
+        surf = pygame.Surface(size, pygame.SRCALPHA)   <span class="cm"># 같은 크기의 투명 Surface 생성</span>
+        surf.fill(fallback_color)   <span class="cm"># 대체 색으로 채움</span>
+        <span class="kw">return</span> surf   <span class="cm"># 이미지 대신 이 사각형을 반환</span>
 
 
 <span class="kw">class</span> <span class="fn">Player</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y):
         <span class="kw">super</span>().__init__()            <span class="cm"># 부모 클래스 초기화 (필수)</span>
-        self.image = load_image(<span class="st">"player.png"</span>, (<span class="nm">40</span>, <span class="nm">30</span>), (<span class="nm">61</span>, <span class="nm">255</span>, <span class="nm">154</span>))
-        self.rect = self.image.get_rect(center=(x, y))
-        self.speed = <span class="nm">6</span>
+        self.image = load_image(<span class="st">"player.png"</span>, (<span class="nm">40</span>, <span class="nm">30</span>), (<span class="nm">61</span>, <span class="nm">255</span>, <span class="nm">154</span>))   <span class="cm"># 우주선 그림</span>
+        self.rect = self.image.get_rect(center=(x, y))   <span class="cm"># (x,y)를 중심으로 하는 Rect</span>
+        self.speed = <span class="nm">6</span>   <span class="cm"># 한 프레임에 이동하는 픽셀 수</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, keys, screen_width):
         <span class="cm"># Group.update()가 호출될 때 자동으로 실행되는 메서드</span>
-        <span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> self.rect.left > <span class="nm">0</span>:
-            self.rect.x -= self.speed
-        <span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> self.rect.right < screen_width:
-            self.rect.x += self.speed
+        <span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> self.rect.left > <span class="nm">0</span>:   <span class="cm"># 왼쪽 키 + 경계 안쪽</span>
+            self.rect.x -= self.speed   <span class="cm"># 왼쪽 이동</span>
+        <span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> self.rect.right < screen_width:   <span class="cm"># 오른쪽 키 + 경계 안쪽</span>
+            self.rect.x += self.speed   <span class="cm"># 오른쪽 이동</span>
 
 
 <span class="kw">class</span> <span class="fn">Bullet</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y, filename=<span class="st">"bullet_player.png"</span>, color=(<span class="nm">61</span>,<span class="nm">255</span>,<span class="nm">154</span>), direction=-<span class="nm">1</span>):
         <span class="kw">super</span>().__init__()
-        self.image = load_image(filename, (<span class="nm">4</span>, <span class="nm">12</span>), color)
-        <span class="kw">if</span> direction == -<span class="nm">1</span>:
+        self.image = load_image(filename, (<span class="nm">4</span>, <span class="nm">12</span>), color)   <span class="cm"># filename으로 플레이어/적 총알 구분</span>
+        <span class="kw">if</span> direction == -<span class="nm">1</span>:   <span class="cm"># 위로 발사(플레이어)</span>
             self.rect = self.image.get_rect(midbottom=(x, y))  <span class="cm"># 위로: 꼬리를 시작점에 맞춤</span>
-        <span class="kw">else</span>:
+        <span class="kw">else</span>:   <span class="cm"># 아래로 발사(적)</span>
             self.rect = self.image.get_rect(midtop=(x, y))     <span class="cm"># 아래로: 머리를 시작점에 맞춤</span>
         self.direction = direction  <span class="cm"># -1: 위로(플레이어), 1: 아래로(적)</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        self.rect.y += <span class="nm">10</span> * self.direction
-        <span class="kw">if</span> self.rect.bottom < <span class="nm">0</span> <span class="kw">or</span> self.rect.top > <span class="nm">700</span>:
+        self.rect.y += <span class="nm">10</span> * self.direction   <span class="cm"># 위/아래로 이동</span>
+        <span class="kw">if</span> self.rect.bottom < <span class="nm">0</span> <span class="kw">or</span> self.rect.top > <span class="nm">700</span>:   <span class="cm"># 화면을 완전히 벗어났으면</span>
             self.kill()   <span class="cm"># 소속된 모든 그룹에서 스스로를 제거</span></code></pre>
 
       <div class="feature">
@@ -1658,25 +1772,90 @@ IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="
         살짝 겹쳐서 시작하는 어색한 모양이 됩니다.
       </div>
 
-      <h3>Group으로 한 번에 관리하기</h3>
-      <pre><span class="filename">main.py (일부)</span><code>all_sprites = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 820 420" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono', monospace" style="width:100%;height:auto;">
+          <defs>
+            <marker id="bullet-arrow-g" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--green)"/>
+            </marker>
+            <marker id="bullet-arrow-m" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--magenta)"/>
+            </marker>
+          </defs>
 
-player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)
-all_sprites.add(player)
+          <!-- 패널 구분선 -->
+          <line x1="410" y1="20" x2="410" y2="400" stroke="var(--line)" stroke-width="1.5" stroke-dasharray="5 4"/>
+
+          <!-- 패널 제목 -->
+          <text x="140" y="40" text-anchor="middle" font-size="14" font-weight="700" fill="var(--green)">PLAYER 발사 (위로)</text>
+          <text x="620" y="40" text-anchor="middle" font-size="14" font-weight="700" fill="var(--magenta)">ENEMY 발사 (아래로)</text>
+
+          <!-- ===== 왼쪽: 플레이어 ===== -->
+          <!-- 이동 방향 화살표 -->
+          <line x1="140" y1="223" x2="140" y2="103" stroke="var(--green)" stroke-width="2.5" marker-end="url(#bullet-arrow-g)"/>
+          <text x="140" y="90" text-anchor="middle" font-size="11.5" fill="var(--green)">direction = -1 (위로)</text>
+
+          <!-- 총알 -->
+          <rect x="136" y="225" width="8" height="30" fill="var(--bg-panel)" stroke="var(--green)" stroke-width="2"/>
+
+          <!-- 우주선 -->
+          <path d="M 140 255 L 115 295 L 165 295 Z" fill="var(--bg-panel)" stroke="var(--text)" stroke-width="2"/>
+          <text x="140" y="312" text-anchor="middle" font-size="11" fill="var(--dim)">player</text>
+
+          <!-- 접점 표시 -->
+          <circle cx="140" cy="255" r="3.5" fill="var(--amber)"/>
+          <text x="188" y="252" font-size="11" fill="var(--dim)">← player.rect.top</text>
+          <text x="188" y="267" font-size="11" fill="var(--dim)">= 총알의 midbottom</text>
+
+          <text x="140" y="345" text-anchor="middle" font-size="10.5" fill="var(--dim)">Bullet(player.centerx, player.top)</text>
+
+          <!-- ===== 오른쪽: 적 ===== -->
+          <!-- 적 -->
+          <rect x="590" y="90" width="60" height="44" rx="4" fill="var(--bg-panel)" stroke="var(--text)" stroke-width="2"/>
+          <text x="620" y="80" text-anchor="middle" font-size="11" fill="var(--dim)">enemy</text>
+
+          <!-- 총알 -->
+          <rect x="616" y="134" width="8" height="30" fill="var(--bg-panel)" stroke="var(--magenta)" stroke-width="2"/>
+
+          <!-- 이동 방향 화살표 -->
+          <line x1="620" y1="166" x2="620" y2="286" stroke="var(--magenta)" stroke-width="2.5" marker-end="url(#bullet-arrow-m)"/>
+          <text x="620" y="302" text-anchor="middle" font-size="11.5" fill="var(--magenta)">direction = 1 (아래로)</text>
+
+          <!-- 접점 표시 -->
+          <circle cx="620" cy="134" r="3.5" fill="var(--amber)"/>
+          <text x="660" y="122" font-size="11" fill="var(--dim)">enemy.rect.bottom →</text>
+          <text x="660" y="137" font-size="11" fill="var(--dim)">= 총알의 midtop</text>
+
+          <text x="620" y="338" text-anchor="middle" font-size="10.5" fill="var(--dim)">Bullet(shooter.centerx, shooter.bottom,</text>
+          <text x="620" y="352" text-anchor="middle" font-size="10.5" fill="var(--dim)">direction=1)</text>
+        </svg>
+        <p class="diagram-caption">
+          노란 점은 <b>"우주선/적의 좌표"이자 동시에 "총알 Rect의 기준점"</b>인 지점입니다.
+          플레이어는 <code class="inline">rect.top</code>에 총알의 <code class="inline">midbottom</code>을 맞춰 코 끝에서 위로,
+          적은 <code class="inline">rect.bottom</code>에 총알의 <code class="inline">midtop</code>을 맞춰 몸체 바로 아래에서
+          아래로 뻗어나갑니다. <code class="inline">direction</code> 값(-1 또는 1)이 이동 방향과 앵커 선택을 동시에 결정합니다.
+        </p>
+      </div>
+
+      <h3>Group으로 한 번에 관리하기</h3>
+      <pre><span class="filename">main.py (일부)</span><code>all_sprites = pygame.sprite.Group()   <span class="cm"># 그리기·업데이트용 전체 그룹</span>
+bullets = pygame.sprite.Group()         <span class="cm"># 총알만 따로 담는 그룹 (충돌 검사용)</span>
+
+player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)   <span class="cm"># 우주선 스프라이트 생성</span>
+all_sprites.add(player)   <span class="cm"># 그리기 대상에 등록</span>
 
 <span class="cm"># --- 이벤트: 스페이스로 총알 생성 ---</span>
 <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_SPACE:
-    bullet = Bullet(player.rect.centerx, player.rect.top)
-    bullets.add(bullet)
-    all_sprites.add(bullet)
+    bullet = Bullet(player.rect.centerx, player.rect.top)   <span class="cm"># 새 총알 생성</span>
+    bullets.add(bullet)       <span class="cm"># 충돌 검사용 그룹에 등록</span>
+    all_sprites.add(bullet)   <span class="cm"># 그리기용 그룹에도 등록 (같은 스프라이트가 여러 그룹 소속 가능)</span>
 
 <span class="cm"># --- 업데이트 단계: 그룹 전체를 한 줄로 갱신 ---</span>
 keys = pygame.key.get_pressed()
-all_sprites.update(keys, WIDTH)
+all_sprites.update(keys, WIDTH)   <span class="cm"># 그룹 안 모든 스프라이트의 update()를 일괄 호출</span>
 
 <span class="cm"># --- 그리기 단계: 그룹 전체를 한 줄로 그리기 ---</span>
-all_sprites.draw(screen)</code></pre>
+all_sprites.draw(screen)   <span class="cm"># 그룹 안 모든 스프라이트를 각자의 rect 위치에 그림</span></code></pre>
 
       <div class="feature">
         <div class="flabel">스프라이트 그룹 · pygame.sprite.Group</div>
@@ -1728,6 +1907,99 @@ all_sprites.draw(screen)</code></pre>
         <div class="mlabel">✔ 확인 미션</div>
         04 스테이지에서 리스트로 만들었던 총알 로직을 전부 <code class="inline">Bullet</code> 스프라이트와
         <code class="inline">Group</code>으로 교체해보세요. 동작 결과는 같아야 합니다.
+
+        <button class="hint-btn" type="button" aria-expanded="false" aria-controls="hint-stage5-bullet" aria-label="힌트 보기"><span class="material-symbols-outlined">question_mark</span></button>
+
+        <div class="hint-panel" id="hint-stage5-bullet">
+          <div class="hint-panel-label">예시 답안 보기</div>
+
+          <p style="margin:0 0 4px;font-size:12.5px;color:var(--dim);">Before — 04장 리스트 방식</p>
+          <div class="code-wrapper"><span class="filename">main.py (Before)</span>
+          <pre><code>bullets = []
+BULLET_SPEED = <span class="nm">10</span>
+
+<span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
+    <span class="kw">if</span> event.type == pygame.QUIT:
+        running = <span class="kw">False</span>
+    <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_SPACE:
+        bullet = pygame.Rect(player.centerx - <span class="nm">2</span>, player.top, <span class="nm">4</span>, <span class="nm">12</span>)
+        bullets.append(bullet)
+
+<span class="kw">for</span> bullet <span class="kw">in</span> bullets[:]:
+    bullet.y -= BULLET_SPEED
+    <span class="kw">if</span> bullet.colliderect(enemy):
+        bullets.remove(bullet)
+        score += <span class="nm">10</span>
+    <span class="kw">elif</span> bullet.bottom < <span class="nm">0</span>:
+        bullets.remove(bullet)
+
+<span class="kw">for</span> bullet <span class="kw">in</span> bullets:
+    pygame.draw.rect(screen, GREEN, bullet)</code></pre>
+          </div>
+
+          <p style="margin:16px 0 4px;font-size:12.5px;color:var(--dim);">After — 05장 Bullet 스프라이트 + Group 방식</p>
+          <div class="code-wrapper"><span class="filename">main.py (After)</span>
+          <pre><code><span class="kw">import</span> pygame
+<span class="kw">from</span> sprites <span class="kw">import</span> Player, Bullet   <span class="cm"># 05장에서 만든 Bullet 클래스 재사용</span>
+
+pygame.init()
+WIDTH, HEIGHT = <span class="nm">480</span>, <span class="nm">600</span>
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+clock = pygame.time.Clock()
+FPS = <span class="nm">60</span>
+
+all_sprites = pygame.sprite.Group()
+bullets = pygame.sprite.Group()          <span class="cm"># 리스트(bullets = []) → Group()</span>
+
+player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)
+all_sprites.add(player)
+
+enemy = pygame.Rect(<span class="nm">100</span>, <span class="nm">80</span>, <span class="nm">36</span>, <span class="nm">28</span>)     <span class="cm"># 아직 04장 수준의 임시 적 (Enemy 스프라이트는 06장에서)</span>
+score = <span class="nm">0</span>
+running = <span class="kw">True</span>
+
+<span class="kw">while</span> running:
+    <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
+        <span class="kw">if</span> event.type == pygame.QUIT:
+            running = <span class="kw">False</span>
+        <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_SPACE:
+            bullet = Bullet(player.rect.centerx, player.rect.top)
+            bullets.add(bullet)
+            all_sprites.add(bullet)      <span class="cm"># bullets.append(bullet) → 두 그룹에 add()</span>
+
+    keys = pygame.key.get_pressed()
+    all_sprites.update(keys, WIDTH)      <span class="cm"># 총알 이동 + 화면 밖 자동 제거 (Bullet.update()가 처리)</span>
+
+    <span class="kw">for</span> bullet <span class="kw">in</span> bullets:
+        <span class="kw">if</span> bullet.rect.colliderect(enemy):
+            bullet.kill()                <span class="cm"># bullets.remove(bullet) → kill()</span>
+            score += <span class="nm">10</span>
+
+    screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class="nm">20</span>))
+    pygame.draw.rect(screen, (<span class="nm">255</span>, <span class="nm">61</span>, <span class="nm">129</span>), enemy)
+    all_sprites.draw(screen)             <span class="cm"># for bullet in bullets: draw(...) → 한 줄로</span>
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()</code></pre>
+          </div>
+
+          <p style="margin:16px 0 4px;font-size:12.5px;color:var(--dim);">바뀐 지점 한눈에 보기</p>
+          <table class="reftable">
+            <tr><th>04장 (리스트)</th><th>05장 (스프라이트)</th></tr>
+            <tr><td><code class="inline">bullets = []</code></td><td><code class="inline">bullets = pygame.sprite.Group()</code></td></tr>
+            <tr><td><code class="inline">bullets.append(bullet)</code></td><td><code class="inline">bullets.add(bullet)</code> + <code class="inline">all_sprites.add(bullet)</code></td></tr>
+            <tr><td><code class="inline">for bullet in bullets[:]: bullet.y -= SPEED</code></td><td>필요 없음 — <code class="inline">Bullet.update()</code>가 처리</td></tr>
+            <tr><td><code class="inline">if bullet.bottom &lt; 0: bullets.remove(bullet)</code></td><td>필요 없음 — <code class="inline">update()</code> 안 <code class="inline">self.kill()</code>에 내장</td></tr>
+            <tr><td><code class="inline">for bullet in bullets: draw(...)</code></td><td><code class="inline">all_sprites.draw(screen)</code> 한 줄</td></tr>
+          </table>
+
+          <div class="tip" style="margin-bottom:0;">
+            가장 큰 변화는 <b>"화면 밖으로 나가면 제거"</b> 로직이 완전히 사라졌다는 점입니다 — 리스트 방식에서는
+            매 프레임 직접 검사해야 했지만, <code class="inline">Bullet.update()</code> 안에 이미
+            <code class="inline">self.kill()</code>이 들어있어서 메인 루프 코드가 훨씬 짧아집니다.
+          </div>
+        </div>
       </div>
     </section>
 
@@ -1745,28 +2017,28 @@ all_sprites.draw(screen)</code></pre>
       <pre><span class="filename">sprites.py (추가, 맨 위에 import random 필요)</span><code><span class="kw">class</span> <span class="fn">Enemy</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y):
         <span class="kw">super</span>().__init__()
-        self.frames = [
+        self.frames = [   <span class="cm"># 걷기 애니메이션 2프레임을 미리 로드</span>
             load_image(<span class="st">"enemy.png"</span>, (<span class="nm">32</span>, <span class="nm">24</span>), (<span class="nm">255</span>, <span class="nm">61</span>, <span class="nm">129</span>)),
             load_image(<span class="st">"enemy_frame2.png"</span>, (<span class="nm">32</span>, <span class="nm">24</span>), (<span class="nm">255</span>, <span class="nm">61</span>, <span class="nm">129</span>)),
         ]
-        self.frame_index = <span class="nm">0</span>
-        self.image = self.frames[self.frame_index]
+        self.frame_index = <span class="nm">0</span>   <span class="cm"># 지금 보여줄 프레임 번호</span>
+        self.image = self.frames[self.frame_index]   <span class="cm"># 시작 이미지는 0번 프레임</span>
         self.rect = self.image.get_rect(topleft=(x, y))
         self.direction = <span class="nm">1</span>   <span class="cm"># 1: 오른쪽, -1: 왼쪽</span>
-        self.speed = <span class="nm">1</span>
+        self.speed = <span class="nm">1</span>   <span class="cm"># 한 프레임에 이동하는 픽셀 수</span>
         self.anim_timer = pygame.time.get_ticks() + random.randint(<span class="nm">0</span>, <span class="nm">500</span>)  <span class="cm"># 개별 시작 시점을 살짝 어긋나게</span>
         self.anim_interval = <span class="nm">500</span>   <span class="cm"># 0.5초마다 프레임 전환</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        self.rect.x += self.speed * self.direction
+        self.rect.x += self.speed * self.direction   <span class="cm"># 좌우 이동</span>
 
         <span class="cm"># 이 스프라이트만의 타이머로 애니메이션 전환 (다른 외계인과 독립적으로 재생)</span>
-        now = pygame.time.get_ticks()
-        <span class="kw">if</span> now - self.anim_timer > self.anim_interval:
-            self.anim_timer = now
-            self.frame_index = (self.frame_index + <span class="nm">1</span>) % len(self.frames)
+        now = pygame.time.get_ticks()   <span class="cm"># 현재 누적 시간(ms)</span>
+        <span class="kw">if</span> now - self.anim_timer > self.anim_interval:   <span class="cm"># 500ms가 지났으면</span>
+            self.anim_timer = now   <span class="cm"># 타이머 리셋</span>
+            self.frame_index = (self.frame_index + <span class="nm">1</span>) % len(self.frames)   <span class="cm"># 0↔1 순환</span>
             center = self.rect.center           <span class="cm"># 이미지를 바꾸기 전에 중심 좌표를 기억</span>
-            self.image = self.frames[self.frame_index]
+            self.image = self.frames[self.frame_index]   <span class="cm"># 다음 프레임으로 교체</span>
             self.rect = self.image.get_rect(center=center)  <span class="cm"># 같은 중심으로 rect 재생성</span></code></pre>
 
       <div class="feature">
@@ -1800,29 +2072,29 @@ all_sprites.draw(screen)</code></pre>
         정확히 같은 박자로 동시에 깜빡이게 됩니다.
       </div>
 
-      <pre><span class="filename">main.py (함대 배치)</span><code>enemies = pygame.sprite.Group()
+      <pre><span class="filename">main.py (함대 배치)</span><code>enemies = pygame.sprite.Group()   <span class="cm"># 적 함대를 담을 그룹</span>
 
-ROWS, COLS = <span class="nm">4</span>, <span class="nm">8</span>
-GAP_X, GAP_Y = <span class="nm">50</span>, <span class="nm">40</span>
-START_X, START_Y = <span class="nm">40</span>, <span class="nm">60</span>
+ROWS, COLS = <span class="nm">4</span>, <span class="nm">8</span>   <span class="cm"># 4행 8열 = 총 32마리</span>
+GAP_X, GAP_Y = <span class="nm">50</span>, <span class="nm">40</span>   <span class="cm"># 가로/세로 간격(픽셀)</span>
+START_X, START_Y = <span class="nm">40</span>, <span class="nm">60</span>   <span class="cm"># 첫 번째 적의 시작 위치</span>
 
-<span class="kw">for</span> row <span class="kw">in</span> range(ROWS):
-    <span class="kw">for</span> col <span class="kw">in</span> range(COLS):
-        e = Enemy(START_X + col * GAP_X, START_Y + row * GAP_Y)
-        enemies.add(e)
-        all_sprites.add(e)
+<span class="kw">for</span> row <span class="kw">in</span> range(ROWS):        <span class="cm"># 행 0~3 반복</span>
+    <span class="kw">for</span> col <span class="kw">in</span> range(COLS):    <span class="cm"># 열 0~7 반복 (이중 반복문 = 격자)</span>
+        e = Enemy(START_X + col * GAP_X, START_Y + row * GAP_Y)   <span class="cm"># 격자 좌표 계산</span>
+        enemies.add(e)       <span class="cm"># 충돌·이동 검사용 그룹에 등록</span>
+        all_sprites.add(e)   <span class="cm"># 그리기용 그룹에도 등록</span>
 
 <span class="cm"># --- 업데이트 단계: 벽에 닿으면 전체 방향 전환 + 한 칸 내려오기 ---</span>
-edge_hit = <span class="kw">any</span>(e.rect.right > WIDTH <span class="kw">or</span> e.rect.left < <span class="nm">0</span> <span class="kw">for</span> e <span class="kw">in</span> enemies)
+edge_hit = <span class="kw">any</span>(e.rect.right > WIDTH <span class="kw">or</span> e.rect.left < <span class="nm">0</span> <span class="kw">for</span> e <span class="kw">in</span> enemies)   <span class="cm"># 하나라도 벽에 닿았는가</span>
 <span class="kw">if</span> edge_hit:
-    <span class="kw">for</span> e <span class="kw">in</span> enemies:
-        e.direction *= -<span class="nm">1</span>
-        e.rect.y += <span class="nm">14</span>
-enemies.update()
+    <span class="kw">for</span> e <span class="kw">in</span> enemies:   <span class="cm"># 모든 적을 순회하며</span>
+        e.direction *= -<span class="nm">1</span>   <span class="cm"># 방향 반전 (1↔-1)</span>
+        e.rect.y += <span class="nm">14</span>   <span class="cm"># 한 칸 아래로</span>
+enemies.update()   <span class="cm"># 적 그룹의 update()를 일괄 호출 (실제 이동 반영)</span>
 
 <span class="cm"># --- 충돌: 총알 그룹 vs 적 그룹 ---</span>
-hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)
-score += len(hits) * <span class="nm">10</span></code></pre>
+hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)   <span class="cm"># 서로 겹친 것들을 자동 제거하며 딕셔너리로 반환</span>
+score += len(hits) * <span class="nm">10</span>   <span class="cm"># 맞힌 적 수만큼 점수 추가</span></code></pre>
 
       <div class="feature">
         <div class="flabel">그룹 대 그룹 충돌 · groupcollide</div>
@@ -1880,23 +2152,23 @@ score += len(hits) * <span class="nm">10</span></code></pre>
         어림잡아 처리할 수도 있지만, <b>정확한 주기</b>로 제어하고 싶다면 파이게임의 커스텀 타이머 이벤트가 훨씬 명확합니다.
       </p>
 
-      <pre><span class="filename">main.py (일부)</span><code><span class="kw">import</span> random
+      <pre><span class="filename">main.py (일부)</span><code><span class="kw">import</span> random   <span class="cm"># 무작위로 발사할 적을 고르기 위해 필요</span>
 
-ENEMY_FIRE_EVENT = pygame.USEREVENT + <span class="nm">1</span>
+ENEMY_FIRE_EVENT = pygame.USEREVENT + <span class="nm">1</span>   <span class="cm"># 커스텀 이벤트 번호 정의</span>
 pygame.time.set_timer(ENEMY_FIRE_EVENT, <span class="nm">900</span>)  <span class="cm"># 900ms(0.9초)마다 이 이벤트 발생</span>
 
-enemy_bullets = pygame.sprite.Group()
+enemy_bullets = pygame.sprite.Group()   <span class="cm"># 적 총알만 따로 담는 그룹</span>
 
 <span class="cm"># --- 이벤트 처리 단계 ---</span>
 <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
     <span class="kw">if</span> event.type == pygame.QUIT:
         running = <span class="kw">False</span>
-    <span class="kw">if</span> event.type == ENEMY_FIRE_EVENT <span class="kw">and</span> len(enemies) > <span class="nm">0</span>:
-        shooter = random.choice(enemies.sprites())
-        eb = Bullet(shooter.rect.centerx, shooter.rect.bottom,
-                    filename=<span class="st">"bullet_enemy.png"</span>, color=(<span class="nm">255</span>, <span class="nm">200</span>, <span class="nm">87</span>), direction=<span class="nm">1</span>)
-        enemy_bullets.add(eb)
-        all_sprites.add(eb)
+    <span class="kw">if</span> event.type == ENEMY_FIRE_EVENT <span class="kw">and</span> len(enemies) > <span class="nm">0</span>:   <span class="cm"># 타이머 이벤트 + 살아있는 적이 있을 때</span>
+        shooter = random.choice(enemies.sprites())   <span class="cm"># 무작위로 한 마리 선택</span>
+        eb = Bullet(shooter.rect.centerx, shooter.rect.bottom,   <span class="cm"># 그 적의 아래쪽 끝에서</span>
+                    filename=<span class="st">"bullet_enemy.png"</span>, color=(<span class="nm">255</span>, <span class="nm">200</span>, <span class="nm">87</span>), direction=<span class="nm">1</span>)   <span class="cm"># 아래로 발사</span>
+        enemy_bullets.add(eb)   <span class="cm"># 충돌 검사용 그룹에 등록</span>
+        all_sprites.add(eb)     <span class="cm"># 그리기용 그룹에도 등록</span>
 
 <span class="cm"># Bullet 클래스는 06장에서 direction 값을 받도록 만들어 두었으므로,</span>
 <span class="cm"># 플레이어 총알(direction=-1, 위로)과 적 총알(direction=1, 아래로)을 같은 클래스로 처리합니다.</span></code></pre>
@@ -1949,38 +2221,38 @@ enemy_bullets = pygame.sprite.Group()
 
 <span class="kw">def</span> <span class="fn">load_sound</span>(filename):
     <span class="kw">try</span>:
-        s = pygame.mixer.Sound(os.path.join(SND_DIR, filename))
-        s.set_volume(<span class="nm">0.5</span>)
+        s = pygame.mixer.Sound(os.path.join(SND_DIR, filename))   <span class="cm"># 사운드 파일 로드</span>
+        s.set_volume(<span class="nm">0.5</span>)   <span class="cm"># 볼륨 50%</span>
         <span class="kw">return</span> s
     <span class="kw">except</span> pygame.error:
         <span class="kw">return</span> <span class="kw">None</span>  <span class="cm"># 파일이 없어도 게임이 멈추지 않도록 방어</span>
 
-shoot_sound = load_sound(<span class="st">"shoot.wav"</span>)
-explosion_sound = load_sound(<span class="st">"explosion.wav"</span>)
-hit_sound = load_sound(<span class="st">"hit.wav"</span>)
+shoot_sound = load_sound(<span class="st">"shoot.wav"</span>)         <span class="cm"># 발사음</span>
+explosion_sound = load_sound(<span class="st">"explosion.wav"</span>)   <span class="cm"># 폭발음</span>
+hit_sound = load_sound(<span class="st">"hit.wav"</span>)             <span class="cm"># 피격음</span>
 
 <span class="cm"># 배경음악 (Sound가 아니라 mixer.music 모듈을 사용)</span>
 <span class="kw">try</span>:
-    pygame.mixer.music.load(os.path.join(SND_DIR, <span class="st">"bgm.wav"</span>))
-    pygame.mixer.music.set_volume(<span class="nm">0.3</span>)
+    pygame.mixer.music.load(os.path.join(SND_DIR, <span class="st">"bgm.wav"</span>))   <span class="cm"># 배경음악 로드</span>
+    pygame.mixer.music.set_volume(<span class="nm">0.3</span>)   <span class="cm"># 볼륨 30%</span>
     pygame.mixer.music.play(loops=-<span class="nm">1</span>)  <span class="cm"># -1 = 무한 반복</span>
 <span class="kw">except</span> pygame.error:
-    <span class="kw">pass</span>
+    <span class="kw">pass</span>   <span class="cm"># 배경음악 파일이 없어도 계속 진행</span>
 
 <span class="cm"># --- 총알 발사 순간 ---</span>
-<span class="kw">if</span> shoot_sound:
+<span class="kw">if</span> shoot_sound:   <span class="cm"># None이 아닐 때만(파일이 있을 때만)</span>
     shoot_sound.play()
 
 <span class="cm"># --- 적이 맞아 죽는 순간 ---</span>
-<span class="kw">if</span> hits <span class="kw">and</span> explosion_sound:
+<span class="kw">if</span> hits <span class="kw">and</span> explosion_sound:   <span class="cm"># 맞은 적이 있고 사운드 파일도 있으면</span>
     explosion_sound.play()
 
 <span class="cm"># --- 플레이어가 적 총알에 맞거나, 적과 직접 부딪히는 순간 ---</span>
-hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)
+hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)   <span class="cm"># 적 총알과 충돌 검사</span>
 hit_by_enemy = pygame.sprite.spritecollide(player, enemies, <span class="kw">True</span>)   <span class="cm"># 적 본체와의 직접 충돌</span>
-<span class="kw">if</span> (hit_by_bullet <span class="kw">or</span> hit_by_enemy) <span class="kw">and</span> hit_sound:
+<span class="kw">if</span> (hit_by_bullet <span class="kw">or</span> hit_by_enemy) <span class="kw">and</span> hit_sound:   <span class="cm"># 둘 중 하나라도 맞았으면</span>
     hit_sound.play()
-    lives -= <span class="nm">1</span></code></pre>
+    lives -= <span class="nm">1</span>   <span class="cm"># 목숨 1 감소</span></code></pre>
 
       <div class="feature">
         <div class="flabel">오디오 · pygame.mixer</div>
@@ -2138,7 +2410,7 @@ hit_by_enemy = pygame.sprite.spritecollide(player, enemies, <span class="kw">Tru
       </p>
 
       <pre><span class="filename">main.py (상태 관리 · 일부)</span><code>game_state = <span class="st">"TITLE"</span>   <span class="cm"># "TITLE" → "PLAYING" → "EXPLODING" → "GAMEOVER"</span>
-lives, max_lives = <span class="nm">3</span>, <span class="nm">3</span>
+lives, max_lives = <span class="nm">3</span>, <span class="nm">3</span>   <span class="cm"># 현재 목숨 / 최대 목숨</span>
 boom = <span class="kw">None</span>   <span class="cm"># 재생 중인 폭발 스프라이트를 기억해 둘 변수</span>
 
 <span class="cm"># --- 이벤트 처리 단계 ---</span>
@@ -2148,42 +2420,42 @@ boom = <span class="kw">None</span>   <span class="cm"># 재생 중인 폭발 �
 
     <span class="kw">if</span> event.type == pygame.KEYDOWN <span class="kw">and</span> event.key == pygame.K_RETURN:
         <span class="kw">if</span> game_state == <span class="st">"TITLE"</span>:
-            game_state = <span class="st">"PLAYING"</span>
+            game_state = <span class="st">"PLAYING"</span>   <span class="cm"># 타이틀에서 엔터 → 게임 시작</span>
         <span class="kw">elif</span> game_state == <span class="st">"GAMEOVER"</span>:
             game_state = <span class="st">"TITLE"</span>   <span class="cm"># 재시작은 다음 도전 과제에서!</span>
 
 <span class="cm"># --- 업데이트/그리기 단계: 상태별로 분기 ---</span>
-screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class="nm">20</span>))
+screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class="nm">20</span>))   <span class="cm"># 매 프레임 배경을 새로 칠해 잔상 제거</span>
 
 <span class="kw">if</span> game_state == <span class="st">"TITLE"</span>:
-    title_surf = font.render(<span class="st">"SPACE INVADERS"</span>, <span class="kw">True</span>, GREEN)
-    hint_surf  = font.render(<span class="st">"PRESS ENTER TO START"</span>, <span class="kw">True</span>, (<span class="nm">120</span>,<span class="nm">120</span>,<span class="nm">120</span>))
-    screen.blit(title_surf, title_surf.get_rect(center=(WIDTH//<span class="nm">2</span>, <span class="nm">220</span>)))
+    title_surf = font.render(<span class="st">"SPACE INVADERS"</span>, <span class="kw">True</span>, GREEN)   <span class="cm"># 제목 문구</span>
+    hint_surf  = font.render(<span class="st">"PRESS ENTER TO START"</span>, <span class="kw">True</span>, (<span class="nm">120</span>,<span class="nm">120</span>,<span class="nm">120</span>))   <span class="cm"># 안내 문구</span>
+    screen.blit(title_surf, title_surf.get_rect(center=(WIDTH//<span class="nm">2</span>, <span class="nm">220</span>)))   <span class="cm"># 화면 중앙에 배치</span>
     screen.blit(hint_surf,  hint_surf.get_rect(center=(WIDTH//<span class="nm">2</span>, <span class="nm">280</span>)))
 
 <span class="kw">elif</span> game_state == <span class="st">"PLAYING"</span>:
-    keys = pygame.key.get_pressed()
-    all_sprites.update(keys, WIDTH)
-    hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)
-    score += len(hits) * <span class="nm">10</span>
+    keys = pygame.key.get_pressed()   <span class="cm"># 현재 눌린 키 상태</span>
+    all_sprites.update(keys, WIDTH)   <span class="cm"># 전체 스프라이트 이동/애니메이션 갱신</span>
+    hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)   <span class="cm"># 총알↔적 충돌 검사</span>
+    score += len(hits) * <span class="nm">10</span>   <span class="cm"># 맞힌 적 수 × 10점</span>
 
-    hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)
+    hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)   <span class="cm"># 적 총알에 맞았는지</span>
     hit_by_enemy = pygame.sprite.spritecollide(player, enemies, <span class="kw">True</span>)   <span class="cm"># 적 본체와의 직접 충돌도 데미지</span>
     <span class="kw">if</span> hit_by_bullet <span class="kw">or</span> hit_by_enemy:
-        lives -= <span class="nm">1</span>
+        lives -= <span class="nm">1</span>   <span class="cm"># 목숨 1 감소</span>
 
-    all_sprites.draw(screen)
+    all_sprites.draw(screen)   <span class="cm"># 모든 스프라이트 그리기</span>
     <span class="cm"># 목숨 아이콘 표시 (준비 단계에서 만든 life_icon을 오른쪽 위에 lives개 나열)</span>
     <span class="kw">for</span> i <span class="kw">in</span> range(lives):
         screen.blit(life_icon, (WIDTH - <span class="nm">30</span> - i * <span class="nm">26</span>, <span class="nm">10</span>))
 
-    <span class="kw">if</span> lives <= <span class="nm">0</span>:
+    <span class="kw">if</span> lives <= <span class="nm">0</span>:   <span class="cm"># 목숨이 다 떨어졌으면</span>
         boom = Explosion(player.rect.center)   <span class="cm"># 폭발 이펙트 생성</span>
         all_sprites.add(boom)
         player.kill()                          <span class="cm"># 우주선은 화면에서 제거</span>
         <span class="kw">if</span> explosion_sound: explosion_sound.play()
-        game_state = <span class="st">"EXPLODING"</span>
-    <span class="kw">elif</span> len(enemies) == <span class="nm">0</span>:
+        game_state = <span class="st">"EXPLODING"</span>   <span class="cm"># 폭발 재생 상태로 전환</span>
+    <span class="kw">elif</span> len(enemies) == <span class="nm">0</span>:   <span class="cm"># 적을 모두 격추했으면</span>
         game_state = <span class="st">"GAMEOVER"</span>
 
 <span class="kw">elif</span> game_state == <span class="st">"EXPLODING"</span>:
@@ -2193,7 +2465,7 @@ screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class
         game_state = <span class="st">"GAMEOVER"</span>
 
 <span class="kw">elif</span> game_state == <span class="st">"GAMEOVER"</span>:
-    over_surf = font.render(<span class="st">f"GAME OVER  -  SCORE {score}"</span>, <span class="kw">True</span>, (<span class="nm">255</span>,<span class="nm">61</span>,<span class="nm">129</span>))
+    over_surf = font.render(<span class="st">f"GAME OVER  -  SCORE {score}"</span>, <span class="kw">True</span>, (<span class="nm">255</span>,<span class="nm">61</span>,<span class="nm">129</span>))   <span class="cm"># 최종 점수 문구</span>
     screen.blit(over_surf, over_surf.get_rect(center=(WIDTH//<span class="nm">2</span>, HEIGHT//<span class="nm">2</span>)))
 
 pygame.display.flip()
@@ -2205,7 +2477,7 @@ clock.tick(FPS)</code></pre>
         목숨 아이콘으로 재사용합니다. <b>매 프레임이 아니라 게임 시작 시 딱 한 번만</b> 만들어두는 것이 핵심입니다
         (매 프레임 <code class="inline">transform.scale()</code>을 호출하면 불필요하게 느려집니다).
       </p>
-      <pre><span class="filename">main.py (준비 단계, 게임 루프 시작 전)</span><code>player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)
+      <pre><span class="filename">main.py (준비 단계, 게임 루프 시작 전)</span><code>player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)   <span class="cm"># 우주선 생성</span>
 all_sprites.add(player)
 
 life_icon = pygame.transform.scale(player.image, (<span class="nm">20</span>, <span class="nm">15</span>))  <span class="cm"># 목숨 아이콘 (한 번만 생성)</span></code></pre>
@@ -2219,13 +2491,13 @@ life_icon = pygame.transform.scale(player.image, (<span class="nm">20</span>, <s
       <pre><span class="filename">sprites.py (추가)</span><code><span class="kw">class</span> <span class="fn">Explosion</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, center, size=<span class="nm">48</span>, duration=<span class="nm">500</span>):
         <span class="kw">super</span>().__init__()
-        self.image = load_image(<span class="st">"explosion.png"</span>, (size, size), (<span class="nm">255</span>, <span class="nm">200</span>, <span class="nm">87</span>))
-        self.rect = self.image.get_rect(center=center)
-        self.spawn_time = pygame.time.get_ticks()
+        self.image = load_image(<span class="st">"explosion.png"</span>, (size, size), (<span class="nm">255</span>, <span class="nm">200</span>, <span class="nm">87</span>))   <span class="cm"># 폭발 그림</span>
+        self.rect = self.image.get_rect(center=center)   <span class="cm"># 지정한 위치를 중심으로 배치</span>
+        self.spawn_time = pygame.time.get_ticks()   <span class="cm"># 생성된 시각 기록</span>
         self.duration = duration   <span class="cm"># 화면에 보여줄 시간 (밀리초)</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        <span class="kw">if</span> pygame.time.get_ticks() - self.spawn_time > self.duration:
+        <span class="kw">if</span> pygame.time.get_ticks() - self.spawn_time > self.duration:   <span class="cm"># 경과 시간이 duration을 넘으면</span>
             self.kill()   <span class="cm"># 0.5초가 지나면 스스로 사라짐</span></code></pre>
 
       <div class="feature">
@@ -2265,32 +2537,32 @@ life_icon = pygame.transform.scale(player.image, (<span class="nm">20</span>, <s
       </p>
 
       <pre><span class="filename">main.py (재시작 로직)</span><code><span class="kw">def</span> <span class="fn">new_game</span>():
-    <span class="kw">global</span> all_sprites, bullets, enemy_bullets, enemies, player, score, lives, boom
-    all_sprites = pygame.sprite.Group()
-    bullets = pygame.sprite.Group()
-    enemy_bullets = pygame.sprite.Group()
-    enemies = pygame.sprite.Group()
+    <span class="kw">global</span> all_sprites, bullets, enemy_bullets, enemies, player, score, lives, boom   <span class="cm"># 바깥 변수를 수정하겠다고 선언</span>
+    all_sprites = pygame.sprite.Group()       <span class="cm"># 그리기·업데이트용 전체 그룹</span>
+    bullets = pygame.sprite.Group()            <span class="cm"># 플레이어 총알</span>
+    enemy_bullets = pygame.sprite.Group()      <span class="cm"># 적 총알</span>
+    enemies = pygame.sprite.Group()            <span class="cm"># 적 함대</span>
 
-    player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)
+    player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)   <span class="cm"># 새 우주선 생성</span>
     all_sprites.add(player)
 
     <span class="kw">for</span> row <span class="kw">in</span> range(<span class="nm">4</span>):
         <span class="kw">for</span> col <span class="kw">in</span> range(<span class="nm">8</span>):
-            e = Enemy(<span class="nm">40</span> + col * <span class="nm">50</span>, <span class="nm">60</span> + row * <span class="nm">40</span>)
+            e = Enemy(<span class="nm">40</span> + col * <span class="nm">50</span>, <span class="nm">60</span> + row * <span class="nm">40</span>)   <span class="cm"># 적 함대를 다시 격자로 배치</span>
             enemies.add(e); all_sprites.add(e)
 
-    score, lives, boom = <span class="nm">0</span>, <span class="nm">3</span>, <span class="kw">None</span>
+    score, lives, boom = <span class="nm">0</span>, <span class="nm">3</span>, <span class="kw">None</span>   <span class="cm"># 점수·목숨·폭발 참조를 초깃값으로</span>
 
 
 <span class="cm"># --- 게임 시작 전, 게임 루프 진입 직전에 한 번 호출 ---</span>
-new_game()
+new_game()   <span class="cm"># 첫 게임 상태 준비</span>
 game_state = <span class="st">"TITLE"</span>
 
 <span class="cm"># --- 이벤트 처리 단계 (기존 KEYDOWN 블록을 아래처럼 수정) ---</span>
 <span class="kw">if</span> event.key == pygame.K_RETURN <span class="kw">and</span> game_state <span class="kw">in</span> (<span class="st">"TITLE"</span>, <span class="st">"GAMEOVER"</span>):
     <span class="kw">if</span> game_state == <span class="st">"GAMEOVER"</span>:
         new_game()   <span class="cm"># 재시작: 점수·목숨·모든 스프라이트를 초깃값으로</span>
-    game_state = <span class="st">"PLAYING"</span></code></pre>
+    game_state = <span class="st">"PLAYING"</span>   <span class="cm"># 타이틀/게임오버 → 플레이 시작</span></code></pre>
 
       <div class="tip">
         <b>함수 안에서 바깥 변수를 바꾸려면 <code class="inline">global</code>이 필요합니다.</b>
@@ -2367,227 +2639,229 @@ game_state = <span class="st">"TITLE"</span>
         적 함대가 오른쪽(또는 왼쪽)으로만 계속 이동하고 절대 돌아오지 않습니다.
       </div>
 
-      <pre><span class="filename">sprites.py — 전체 코드</span><code><span class="kw">import</span> os, random, pygame
+      <pre><span class="filename">sprites.py — 전체 코드</span><code><span class="kw">import</span> os, random, pygame   <span class="cm"># os: 경로 계산 / random: 애니메이션 시작 시점 무작위화 / pygame: 게임 엔진</span>
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   <span class="cm"># 이 파일(sprites.py)이 있는 폴더의 절대 경로</span>
+IMG_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"images"</span>)     <span class="cm"># 이미지들이 들어있는 하위 폴더 경로</span>
 
 
 <span class="kw">def</span> <span class="fn">load_image</span>(filename, size, fallback_color):
     <span class="cm"># 05-B에서 내려받은 PNG를 불러오되, 없으면 단색 사각형으로 대체</span>
     <span class="kw">try</span>:
-        img = pygame.image.load(os.path.join(IMG_DIR, filename)).convert_alpha()
-        <span class="kw">return</span> pygame.transform.scale(img, size)
-    <span class="kw">except</span> (pygame.error, FileNotFoundError):
-        surf = pygame.Surface(size, pygame.SRCALPHA)
-        surf.fill(fallback_color)
-        <span class="kw">return</span> surf
+        img = pygame.image.load(os.path.join(IMG_DIR, filename)).convert_alpha()  <span class="cm"># PNG 로드 + 투명도 최적화</span>
+        <span class="kw">return</span> pygame.transform.scale(img, size)   <span class="cm"># 원하는 크기로 확대/축소해서 반환</span>
+    <span class="kw">except</span> (pygame.error, FileNotFoundError):   <span class="cm"># 파일이 없거나 손상됐을 때</span>
+        surf = pygame.Surface(size, pygame.SRCALPHA)   <span class="cm"># 같은 크기의 투명 Surface 생성</span>
+        surf.fill(fallback_color)   <span class="cm"># 대체 색으로 채움</span>
+        <span class="kw">return</span> surf   <span class="cm"># 이미지 대신 이 사각형을 돌려줌</span>
 
 
 <span class="kw">class</span> <span class="fn">Player</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y):
-        <span class="kw">super</span>().__init__()            <span class="cm"># 부모 클래스 초기화 (필수)</span>
-        self.image = load_image(<span class="st">"player.png"</span>, (<span class="nm">40</span>, <span class="nm">30</span>), (<span class="nm">61</span>, <span class="nm">255</span>, <span class="nm">154</span>))
-        self.rect = self.image.get_rect(center=(x, y))
-        self.speed = <span class="nm">6</span>
+        <span class="kw">super</span>().__init__()            <span class="cm"># 부모 Sprite 클래스 초기화 (필수 — 그룹에 넣으려면 반드시 호출)</span>
+        self.image = load_image(<span class="st">"player.png"</span>, (<span class="nm">40</span>, <span class="nm">30</span>), (<span class="nm">61</span>, <span class="nm">255</span>, <span class="nm">154</span>))  <span class="cm"># 우주선 그림 (없으면 초록 사각형)</span>
+        self.rect = self.image.get_rect(center=(x, y))   <span class="cm"># (x, y)를 중심으로 하는 위치/크기 Rect 생성</span>
+        self.speed = <span class="nm">6</span>   <span class="cm"># 한 프레임에 이동하는 픽셀 수</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, keys, screen_width):
-        <span class="cm"># Group.update()가 호출될 때 자동으로 실행되는 메서드</span>
-        <span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> self.rect.left > <span class="nm">0</span>:
-            self.rect.x -= self.speed
-        <span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> self.rect.right < screen_width:
-            self.rect.x += self.speed
+        <span class="cm"># Group.update(keys, WIDTH)가 매 프레임 자동으로 이 메서드를 호출해줌</span>
+        <span class="kw">if</span> keys[pygame.K_LEFT] <span class="kw">and</span> self.rect.left > <span class="nm">0</span>:   <span class="cm"># 왼쪽 키 + 아직 화면 왼쪽 끝이 아니면</span>
+            self.rect.x -= self.speed   <span class="cm"># x좌표 감소 = 왼쪽으로 이동</span>
+        <span class="kw">if</span> keys[pygame.K_RIGHT] <span class="kw">and</span> self.rect.right < screen_width:   <span class="cm"># 오른쪽 키 + 아직 화면 오른쪽 끝이 아니면</span>
+            self.rect.x += self.speed   <span class="cm"># x좌표 증가 = 오른쪽으로 이동</span>
 
 
 <span class="kw">class</span> <span class="fn">Bullet</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y, filename=<span class="st">"bullet_player.png"</span>, color=(<span class="nm">61</span>,<span class="nm">255</span>,<span class="nm">154</span>), direction=-<span class="nm">1</span>):
         <span class="kw">super</span>().__init__()
-        self.image = load_image(filename, (<span class="nm">4</span>, <span class="nm">12</span>), color)
-        <span class="kw">if</span> direction == -<span class="nm">1</span>:
-            self.rect = self.image.get_rect(midbottom=(x, y))  <span class="cm"># 위로: 꼬리를 시작점에 맞춤</span>
-        <span class="kw">else</span>:
-            self.rect = self.image.get_rect(midtop=(x, y))     <span class="cm"># 아래로: 머리를 시작점에 맞춤</span>
-        self.direction = direction  <span class="cm"># -1: 위로(플레이어), 1: 아래로(적)</span>
+        self.image = load_image(filename, (<span class="nm">4</span>, <span class="nm">12</span>), color)   <span class="cm"># filename/color로 플레이어·적 총알을 구분해서 재사용</span>
+        <span class="kw">if</span> direction == -<span class="nm">1</span>:   <span class="cm"># 위로 발사(플레이어)일 때</span>
+            self.rect = self.image.get_rect(midbottom=(x, y))  <span class="cm"># 총알의 아래쪽 끝(꼬리)을 시작점에 맞춤</span>
+        <span class="kw">else</span>:   <span class="cm"># 아래로 발사(적)일 때</span>
+            self.rect = self.image.get_rect(midtop=(x, y))     <span class="cm"># 총알의 위쪽 끝(머리)을 시작점에 맞춤</span>
+        self.direction = direction  <span class="cm"># -1: 위로(플레이어), 1: 아래로(적) — update()에서 이동 방향을 결정</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        self.rect.y += <span class="nm">10</span> * self.direction
-        <span class="kw">if</span> self.rect.bottom < <span class="nm">0</span> <span class="kw">or</span> self.rect.top > <span class="nm">700</span>:
-            self.kill()   <span class="cm"># 소속된 모든 그룹에서 스스로를 제거</span>
+        self.rect.y += <span class="nm">10</span> * self.direction   <span class="cm"># direction 부호에 따라 위(-)/아래(+)로 매 프레임 이동</span>
+        <span class="kw">if</span> self.rect.bottom < <span class="nm">0</span> <span class="kw">or</span> self.rect.top > <span class="nm">700</span>:   <span class="cm"># 화면 위/아래를 완전히 벗어났으면</span>
+            self.kill()   <span class="cm"># 소속된 모든 그룹에서 스스로를 제거 (안 지우면 계속 메모리를 차지함)</span>
 
 
 <span class="kw">class</span> <span class="fn">Enemy</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, x, y):
         <span class="kw">super</span>().__init__()
-        self.frames = [
+        self.frames = [   <span class="cm"># 걷기 애니메이션에 쓸 2프레임을 미리 리스트로 로드</span>
             load_image(<span class="st">"enemy.png"</span>, (<span class="nm">32</span>, <span class="nm">24</span>), (<span class="nm">255</span>, <span class="nm">61</span>, <span class="nm">129</span>)),
             load_image(<span class="st">"enemy_frame2.png"</span>, (<span class="nm">32</span>, <span class="nm">24</span>), (<span class="nm">255</span>, <span class="nm">61</span>, <span class="nm">129</span>)),
         ]
-        self.frame_index = <span class="nm">0</span>
-        self.image = self.frames[self.frame_index]
+        self.frame_index = <span class="nm">0</span>   <span class="cm"># 지금 보여줄 프레임 번호 (0 또는 1)</span>
+        self.image = self.frames[self.frame_index]   <span class="cm"># 시작 이미지는 0번 프레임</span>
         self.rect = self.image.get_rect(topleft=(x, y))
-        self.direction = <span class="nm">1</span>   <span class="cm"># 1: 오른쪽, -1: 왼쪽</span>
-        self.speed = <span class="nm">1</span>
-        self.anim_timer = pygame.time.get_ticks() + random.randint(<span class="nm">0</span>, <span class="nm">500</span>)
-        self.anim_interval = <span class="nm">500</span>
+        self.direction = <span class="nm">1</span>   <span class="cm"># 1: 오른쪽, -1: 왼쪽 (main.py의 edge_hit 로직이 이 값을 뒤집음)</span>
+        self.speed = <span class="nm">1</span>   <span class="cm"># 한 프레임에 이동하는 픽셀 수</span>
+        self.anim_timer = pygame.time.get_ticks() + random.randint(<span class="nm">0</span>, <span class="nm">500</span>)   <span class="cm"># 개별 시작 오프셋(0~500ms) → 제각각 걷는 것처럼 보이게</span>
+        self.anim_interval = <span class="nm">500</span>   <span class="cm"># 프레임을 전환할 간격 (밀리초)</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        self.rect.x += self.speed * self.direction
+        self.rect.x += self.speed * self.direction   <span class="cm"># 좌우로 매 프레임 이동</span>
 
-        now = pygame.time.get_ticks()
-        <span class="kw">if</span> now - self.anim_timer > self.anim_interval:
-            self.anim_timer = now
-            self.frame_index = (self.frame_index + <span class="nm">1</span>) % len(self.frames)
-            center = self.rect.center
-            self.image = self.frames[self.frame_index]
-            self.rect = self.image.get_rect(center=center)
+        now = pygame.time.get_ticks()   <span class="cm"># 게임 시작 이후 누적 시간(ms)</span>
+        <span class="kw">if</span> now - self.anim_timer > self.anim_interval:   <span class="cm"># 마지막 전환 이후 500ms가 지났으면</span>
+            self.anim_timer = now   <span class="cm"># 타이머를 지금 시각으로 리셋</span>
+            self.frame_index = (self.frame_index + <span class="nm">1</span>) % len(self.frames)   <span class="cm"># 0→1→0→1 ... 순환</span>
+            center = self.rect.center   <span class="cm"># 이미지를 바꾸기 전에 중심 좌표를 기억</span>
+            self.image = self.frames[self.frame_index]   <span class="cm"># 다음 프레임 이미지로 교체</span>
+            self.rect = self.image.get_rect(center=center)   <span class="cm"># 같은 중심으로 rect 재생성 (위치가 밀리지 않게)</span>
 
 
 <span class="kw">class</span> <span class="fn">Explosion</span>(pygame.sprite.Sprite):
     <span class="kw">def</span> <span class="fn">__init__</span>(self, center, size=<span class="nm">48</span>, duration=<span class="nm">500</span>):
         <span class="kw">super</span>().__init__()
         self.image = load_image(<span class="st">"explosion.png"</span>, (size, size), (<span class="nm">255</span>, <span class="nm">200</span>, <span class="nm">87</span>))
-        self.rect = self.image.get_rect(center=center)
-        self.spawn_time = pygame.time.get_ticks()
+        self.rect = self.image.get_rect(center=center)   <span class="cm"># 폭발이 일어난 위치를 중심으로 배치</span>
+        self.spawn_time = pygame.time.get_ticks()   <span class="cm"># 이 스프라이트가 생성된 시각을 기록</span>
         self.duration = duration   <span class="cm"># 화면에 보여줄 시간 (밀리초)</span>
 
     <span class="kw">def</span> <span class="fn">update</span>(self, *args):
-        <span class="kw">if</span> pygame.time.get_ticks() - self.spawn_time > self.duration:
+        <span class="kw">if</span> pygame.time.get_ticks() - self.spawn_time > self.duration:   <span class="cm"># 생성 후 duration(ms)이 지났으면</span>
             self.kill()   <span class="cm"># 0.5초가 지나면 스스로 사라짐</span></code></pre>
 
-      <pre><span class="filename">main.py — 전체 뼈대</span><code><span class="kw">import</span> os, random, pygame
-<span class="kw">from</span> sprites <span class="kw">import</span> Player, Bullet, Enemy, Explosion
+      <pre><span class="filename">main.py — 전체 뼈대</span><code><span class="kw">import</span> os, random, pygame   <span class="cm"># os: 경로 계산 / random: 적 발사 대상 무작위 선택</span>
+<span class="kw">from</span> sprites <span class="kw">import</span> Player, Bullet, Enemy, Explosion   <span class="cm"># 05~10장에서 만든 스프라이트 클래스들</span>
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SND_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"sounds"</span>)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))   <span class="cm"># 이 main.py가 있는 폴더의 절대 경로</span>
+SND_DIR = os.path.join(BASE_DIR, <span class="st">"assets"</span>, <span class="st">"sounds"</span>)   <span class="cm"># 사운드 파일 폴더 경로</span>
 
-pygame.init()
-WIDTH, HEIGHT = <span class="nm">480</span>, <span class="nm">600</span>
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption(<span class="st">"스페이스 인베이더"</span>)
+pygame.init()   <span class="cm"># 파이게임 전체 초기화 (반드시 가장 먼저 호출)</span>
+WIDTH, HEIGHT = <span class="nm">480</span>, <span class="nm">600</span>   <span class="cm"># 게임 화면 크기</span>
+screen = pygame.display.set_mode((WIDTH, HEIGHT))   <span class="cm"># 화면(Surface) 생성</span>
+pygame.display.set_caption(<span class="st">"스페이스 인베이더"</span>)   <span class="cm"># 창 제목</span>
 pygame.key.stop_text_input()  <span class="cm"># 한글 등 IME가 키 입력을 가로채지 않도록 끄기</span>
-clock = pygame.time.Clock()
-font = pygame.font.SysFont(<span class="st">"consolas"</span>, <span class="nm">24</span>)
-FPS = <span class="nm">60</span>
+clock = pygame.time.Clock()   <span class="cm"># 프레임 속도 조절용 시계</span>
+font = pygame.font.SysFont(<span class="st">"consolas"</span>, <span class="nm">24</span>)   <span class="cm"># 점수·안내 문구에 쓸 폰트</span>
+FPS = <span class="nm">60</span>   <span class="cm"># 초당 프레임 목표치</span>
 
-pygame.mixer.init()
+pygame.mixer.init()   <span class="cm"># 오디오 시스템 초기화</span>
 <span class="kw">def</span> <span class="fn">load_sound</span>(filename):
+    <span class="cm"># 사운드 파일을 불러오되, 없거나 오류가 나면 None을 돌려줌(무음 처리)</span>
     <span class="kw">try</span>:
         <span class="kw">return</span> pygame.mixer.Sound(os.path.join(SND_DIR, filename))
     <span class="kw">except</span> pygame.error:
         <span class="kw">return</span> <span class="kw">None</span>
 
-shoot_sound = load_sound(<span class="st">"shoot.wav"</span>)
-explosion_sound = load_sound(<span class="st">"explosion.wav"</span>)
-hit_sound = load_sound(<span class="st">"hit.wav"</span>)
+shoot_sound = load_sound(<span class="st">"shoot.wav"</span>)           <span class="cm"># 발사음</span>
+explosion_sound = load_sound(<span class="st">"explosion.wav"</span>)   <span class="cm"># 폭발음 (적 격추 + 플레이어 사망 공용)</span>
+hit_sound = load_sound(<span class="st">"hit.wav"</span>)               <span class="cm"># 플레이어 피격음</span>
 <span class="kw">try</span>:
-    pygame.mixer.music.load(os.path.join(SND_DIR, <span class="st">"bgm.wav"</span>))
-    pygame.mixer.music.set_volume(<span class="nm">0.3</span>)
-    pygame.mixer.music.play(loops=-<span class="nm">1</span>)
+    pygame.mixer.music.load(os.path.join(SND_DIR, <span class="st">"bgm.wav"</span>))   <span class="cm"># 배경음악 로드</span>
+    pygame.mixer.music.set_volume(<span class="nm">0.3</span>)   <span class="cm"># 볼륨 30%</span>
+    pygame.mixer.music.play(loops=-<span class="nm">1</span>)   <span class="cm"># 무한 반복 재생</span>
 <span class="kw">except</span> pygame.error:
-    <span class="kw">pass</span>
+    <span class="kw">pass</span>   <span class="cm"># 배경음악 파일이 없어도 게임은 계속 진행</span>
 
-ENEMY_FIRE_EVENT = pygame.USEREVENT + <span class="nm">1</span>
-pygame.time.set_timer(ENEMY_FIRE_EVENT, <span class="nm">900</span>)
+ENEMY_FIRE_EVENT = pygame.USEREVENT + <span class="nm">1</span>        <span class="cm"># 적 발사를 위한 커스텀 이벤트 번호</span>
+pygame.time.set_timer(ENEMY_FIRE_EVENT, <span class="nm">900</span>)   <span class="cm"># 900ms(0.9초)마다 이 이벤트를 자동 발생</span>
 
 
 <span class="kw">def</span> <span class="fn">new_game</span>():
+    <span class="cm"># 게임을 초기 상태로 되돌리는 함수. 첫 시작과 재시작 모두 이 함수 하나로 처리</span>
     <span class="kw">global</span> all_sprites, bullets, enemy_bullets, enemies, player, score, lives, boom
-    all_sprites = pygame.sprite.Group()
-    bullets = pygame.sprite.Group()
-    enemy_bullets = pygame.sprite.Group()
-    enemies = pygame.sprite.Group()
+    all_sprites = pygame.sprite.Group()     <span class="cm"># 그리기·업데이트용 전체 그룹</span>
+    bullets = pygame.sprite.Group()          <span class="cm"># 플레이어 총알 (충돌 검사용)</span>
+    enemy_bullets = pygame.sprite.Group()    <span class="cm"># 적 총알 (충돌 검사용)</span>
+    enemies = pygame.sprite.Group()          <span class="cm"># 적 함대 (충돌 검사·방향 전환용)</span>
 
-    player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)
+    player = Player(WIDTH // <span class="nm">2</span>, HEIGHT - <span class="nm">40</span>)   <span class="cm"># 새 우주선 생성</span>
     all_sprites.add(player)
 
-    <span class="kw">for</span> row <span class="kw">in</span> range(<span class="nm">4</span>):
-        <span class="kw">for</span> col <span class="kw">in</span> range(<span class="nm">8</span>):
+    <span class="kw">for</span> row <span class="kw">in</span> range(<span class="nm">4</span>):            <span class="cm"># 4행</span>
+        <span class="kw">for</span> col <span class="kw">in</span> range(<span class="nm">8</span>):        <span class="cm"># × 8열 = 총 32마리 격자 배치</span>
             e = Enemy(<span class="nm">40</span> + col * <span class="nm">50</span>, <span class="nm">60</span> + row * <span class="nm">40</span>)
             enemies.add(e); all_sprites.add(e)
 
-    score, lives, boom = <span class="nm">0</span>, <span class="nm">3</span>, <span class="kw">None</span>
+    score, lives, boom = <span class="nm">0</span>, <span class="nm">3</span>, <span class="kw">None</span>   <span class="cm"># 점수·목숨·폭발 스프라이트 참조를 초기화</span>
 
 
-new_game()
+new_game()   <span class="cm"># 게임 루프에 들어가기 전, 첫 상태를 미리 준비</span>
 life_icon = pygame.transform.scale(player.image, (<span class="nm">20</span>, <span class="nm">15</span>))   <span class="cm"># 목숨 아이콘 (한 번만 생성)</span>
-game_state = <span class="st">"TITLE"</span>
+game_state = <span class="st">"TITLE"</span>   <span class="cm"># "TITLE" → "PLAYING" → "EXPLODING" → "GAMEOVER"</span>
 running = <span class="kw">True</span>
 
 <span class="kw">while</span> running:
-    <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():
+    <span class="kw">for</span> event <span class="kw">in</span> pygame.event.get():   <span class="cm"># 이 프레임에 쌓인 모든 입력을 순회</span>
         <span class="kw">if</span> event.type == pygame.QUIT:
-            running = <span class="kw">False</span>
+            running = <span class="kw">False</span>   <span class="cm"># 창 닫기 → 루프 종료</span>
         <span class="kw">if</span> event.type == pygame.KEYDOWN:
             <span class="kw">if</span> event.key == pygame.K_RETURN <span class="kw">and</span> game_state <span class="kw">in</span> (<span class="st">"TITLE"</span>, <span class="st">"GAMEOVER"</span>):
                 <span class="kw">if</span> game_state == <span class="st">"GAMEOVER"</span>:
                     new_game()   <span class="cm"># 재시작: 점수·목숨·모든 스프라이트를 초깃값으로</span>
-                game_state = <span class="st">"PLAYING"</span>
+                game_state = <span class="st">"PLAYING"</span>   <span class="cm"># 타이틀/게임오버 → 플레이 시작</span>
             <span class="kw">if</span> event.key == pygame.K_SPACE <span class="kw">and</span> game_state == <span class="st">"PLAYING"</span>:
-                b = Bullet(player.rect.centerx, player.rect.top)
-                bullets.add(b); all_sprites.add(b)
+                b = Bullet(player.rect.centerx, player.rect.top)   <span class="cm"># 우주선 코 끝에서 총알 생성</span>
+                bullets.add(b); all_sprites.add(b)                  <span class="cm"># 충돌용 + 그리기용 그룹에 등록</span>
                 <span class="kw">if</span> shoot_sound: shoot_sound.play()
         <span class="kw">if</span> event.type == ENEMY_FIRE_EVENT <span class="kw">and</span> enemies <span class="kw">and</span> game_state == <span class="st">"PLAYING"</span>:
-            shooter = random.choice(enemies.sprites())
+            shooter = random.choice(enemies.sprites())   <span class="cm"># 살아있는 적 중 무작위 한 마리 선택</span>
             eb = Bullet(shooter.rect.centerx, shooter.rect.bottom,
-                        filename=<span class="st">"bullet_enemy.png"</span>, color=(<span class="nm">255</span>,<span class="nm">200</span>,<span class="nm">87</span>), direction=<span class="nm">1</span>)
+                        filename=<span class="st">"bullet_enemy.png"</span>, color=(<span class="nm">255</span>,<span class="nm">200</span>,<span class="nm">87</span>), direction=<span class="nm">1</span>)   <span class="cm"># 아래로 발사</span>
             enemy_bullets.add(eb); all_sprites.add(eb)
 
-    screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class="nm">20</span>))
+    screen.fill((<span class="nm">10</span>, <span class="nm">10</span>, <span class="nm">20</span>))   <span class="cm"># 매 프레임 배경을 새로 칠해 이전 프레임 잔상 제거</span>
 
     <span class="kw">if</span> game_state == <span class="st">"PLAYING"</span>:
-        keys = pygame.key.get_pressed()
+        keys = pygame.key.get_pressed()   <span class="cm"># 현재 눌려있는 모든 키 상태</span>
 
         <span class="cm"># 적 함대가 벽에 닿으면 방향 전환 + 한 칸 내려오기 (07장 로직)</span>
         edge_hit = <span class="kw">any</span>(e.rect.right > WIDTH <span class="kw">or</span> e.rect.left < <span class="nm">0</span> <span class="kw">for</span> e <span class="kw">in</span> enemies)
         <span class="kw">if</span> edge_hit:
             <span class="kw">for</span> e <span class="kw">in</span> enemies:
-                e.direction *= -<span class="nm">1</span>
-                e.rect.y += <span class="nm">14</span>
+                e.direction *= -<span class="nm">1</span>   <span class="cm"># 전체 방향 반전</span>
+                e.rect.y += <span class="nm">14</span>      <span class="cm"># 한 칸 아래로 전진</span>
 
-        all_sprites.update(keys, WIDTH)
+        all_sprites.update(keys, WIDTH)   <span class="cm"># 모든 스프라이트의 update() 일괄 호출 (이동·애니메이션)</span>
 
-        hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)
-        score += len(hits) * <span class="nm">10</span>
+        hits = pygame.sprite.groupcollide(bullets, enemies, <span class="kw">True</span>, <span class="kw">True</span>)   <span class="cm"># 총알↔적 충돌 검사 + 자동 제거</span>
+        score += len(hits) * <span class="nm">10</span>   <span class="cm"># 맞힌 적 수 × 10점</span>
         <span class="kw">if</span> hits <span class="kw">and</span> explosion_sound: explosion_sound.play()
 
-        hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)
-        hit_by_enemy = pygame.sprite.spritecollide(player, enemies, <span class="kw">True</span>)   <span class="cm"># 적 본체와의 직접 충돌</span>
-        <span class="kw">if</span> hit_by_bullet <span class="kw">or</span> hit_by_enemy:
+        hit_by_bullet = pygame.sprite.spritecollide(player, enemy_bullets, <span class="kw">True</span>)   <span class="cm"># 적 총알에 맞았는지</span>
+        hit_by_enemy = pygame.sprite.spritecollide(player, enemies, <span class="kw">True</span>)   <span class="cm"># 적 본체와 직접 충돌했는지</span>
+        <span class="kw">if</span> hit_by_bullet <span class="kw">or</span> hit_by_enemy:   <span class="cm"># 둘 중 하나라도 맞았으면 한 번만 데미지</span>
             lives -= <span class="nm">1</span>
             <span class="kw">if</span> hit_sound: hit_sound.play()
 
-        all_sprites.draw(screen)
-        screen.blit(font.render(<span class="st">f"SCORE {score}"</span>, <span class="kw">True</span>, (<span class="nm">61</span>,<span class="nm">255</span>,<span class="nm">154</span>)), (<span class="nm">10</span>, <span class="nm">10</span>))
-        <span class="kw">for</span> i <span class="kw">in</span> range(lives):
+        all_sprites.draw(screen)   <span class="cm"># 모든 스프라이트를 각자의 rect 위치에 그리기</span>
+        screen.blit(font.render(<span class="st">f"SCORE {score}"</span>, <span class="kw">True</span>, (<span class="nm">61</span>,<span class="nm">255</span>,<span class="nm">154</span>)), (<span class="nm">10</span>, <span class="nm">10</span>))   <span class="cm"># 점수 표시</span>
+        <span class="kw">for</span> i <span class="kw">in</span> range(lives):   <span class="cm"># 목숨 개수만큼 아이콘 반복 표시</span>
             screen.blit(life_icon, (WIDTH - <span class="nm">30</span> - i * <span class="nm">26</span>, <span class="nm">10</span>))
 
-        <span class="kw">if</span> lives <= <span class="nm">0</span>:
-            boom = Explosion(player.rect.center)
+        <span class="kw">if</span> lives <= <span class="nm">0</span>:   <span class="cm"># 목숨이 다 떨어졌으면</span>
+            boom = Explosion(player.rect.center)   <span class="cm"># 우주선 자리에 폭발 이펙트 생성</span>
             all_sprites.add(boom)
-            player.kill()
+            player.kill()   <span class="cm"># 우주선은 화면에서 제거</span>
             <span class="kw">if</span> explosion_sound: explosion_sound.play()
-            game_state = <span class="st">"EXPLODING"</span>
-        <span class="kw">elif</span> len(enemies) == <span class="nm">0</span>:
-            game_state = <span class="st">"GAMEOVER"</span>
+            game_state = <span class="st">"EXPLODING"</span>   <span class="cm"># 폭발 재생 상태로 전환</span>
+        <span class="kw">elif</span> len(enemies) == <span class="nm">0</span>:   <span class="cm"># 적을 모두 격추했으면</span>
+            game_state = <span class="st">"GAMEOVER"</span>   <span class="cm"># 승리로 게임 오버 화면으로 전환</span>
 
     <span class="kw">elif</span> game_state == <span class="st">"EXPLODING"</span>:
-        all_sprites.update(pygame.key.get_pressed(), WIDTH)
+        all_sprites.update(pygame.key.get_pressed(), WIDTH)   <span class="cm"># 폭발 애니메이션 시간 진행</span>
         all_sprites.draw(screen)
-        <span class="kw">if</span> <span class="kw">not</span> boom.alive():
-            game_state = <span class="st">"GAMEOVER"</span>
+        <span class="kw">if</span> <span class="kw">not</span> boom.alive():   <span class="cm"># 폭발 스프라이트가 스스로 kill()되어 사라졌으면</span>
+            game_state = <span class="st">"GAMEOVER"</span>   <span class="cm"># 게임 오버 화면으로 전환</span>
 
     <span class="kw">elif</span> game_state == <span class="st">"TITLE"</span>:
         screen.blit(font.render(<span class="st">"PRESS ENTER TO START"</span>, <span class="kw">True</span>, (<span class="nm">200</span>,<span class="nm">200</span>,<span class="nm">200</span>)),
-                    (WIDTH//<span class="nm">2</span> - <span class="nm">150</span>, HEIGHT//<span class="nm">2</span>))
+                    (WIDTH//<span class="nm">2</span> - <span class="nm">150</span>, HEIGHT//<span class="nm">2</span>))   <span class="cm"># 시작 안내 문구</span>
 
     <span class="kw">elif</span> game_state == <span class="st">"GAMEOVER"</span>:
         screen.blit(font.render(<span class="st">f"GAME OVER - SCORE {score}"</span>, <span class="kw">True</span>, (<span class="nm">255</span>,<span class="nm">61</span>,<span class="nm">129</span>)),
-                    (WIDTH//<span class="nm">2</span> - <span class="nm">150</span>, HEIGHT//<span class="nm">2</span>))
+                    (WIDTH//<span class="nm">2</span> - <span class="nm">150</span>, HEIGHT//<span class="nm">2</span>))   <span class="cm"># 최종 점수 표시</span>
 
-    pygame.display.flip()
-    clock.tick(FPS)
+    pygame.display.flip()   <span class="cm"># 메모리에 그린 내용을 실제 화면으로 전송</span>
+    clock.tick(FPS)          <span class="cm"># 초당 FPS로 속도 고정</span>
 
-pygame.quit()</code></pre>
+pygame.quit()   <span class="cm"># 파이게임 종료 정리</span></code></pre>
 
       <h3>스테이지별 학습 체크리스트</h3>
       <ul class="checklist">
@@ -2710,6 +2984,17 @@ pygame.quit()</code></pre>
         btn.innerHTML = COPY_ICON + '<span class="label">FAILED</span>';
         setTimeout(() => { btn.innerHTML = COPY_ICON + '<span class="label">COPY</span>'; }, 1600);
       });
+    });
+  });
+
+  // mission hint toggle (? 버튼)
+  document.querySelectorAll('.hint-btn').forEach(btn => {
+    const panelId = btn.getAttribute('aria-controls');
+    const panel = document.getElementById(panelId);
+    if (!panel) return;
+    btn.addEventListener('click', () => {
+      const isOpen = panel.classList.toggle('open');
+      btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
   });
 
