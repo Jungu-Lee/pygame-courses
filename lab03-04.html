@@ -448,86 +448,128 @@ vel.y = math.sin(angle) * power             # 각도 -> y방향 속도 성분</p
   <div class="code-wrapper">
     <div class="filename">physics_bounce_demo.py</div>
     <button class="copy-btn" onclick="copyCode(this)">복사</button>
-    <pre id="code-physics">import pygame
+    <pre id="code-physics">&quot;&quot;&quot;
+물리 실습: 중력 &amp; 반사각 - 통통 튀는 공
+=========================================
+[이번 주차 핵심 학습 내용]
+  1) pygame.Vector2로 위치·속도를 벡터 하나로 다루기
+  2) &quot;중력&quot;을 매 프레임 속도에 더하는 방식으로 구현하기 (가속도 개념)
+  3) 바닥/벽에 부딪혔을 때 속도를 반전시켜 &quot;반사&quot;시키기 (반발 계수 포함)
+  4) math.atan2 / math.cos / math.sin으로 드래그 방향 → 발사 속도 벡터 만들기 (새총 발사)
+
+아래 두 곳이 이번 시간에 새로 배우는 &quot;핵심 알고리즘&quot;입니다. 다른 부분(창 생성,
+이미지·사운드 로드, 이벤트 루프 뼈대 등)은 이전 실습들에서 이미 다룬 내용이므로
+비교적 짧게 주석을 달았습니다.
+  - Ball.update()               : 중력 + 이동 + 바닥/벽 충돌 반사
+  - MOUSEBUTTONUP 이벤트 처리부  : 드래그 → 발사 각도 · 속도 계산 (새총 발사)
+&quot;&quot;&quot;
+
+import pygame
 import sys
 import math
 
-pygame.init()
-pygame.mixer.init()
+pygame.init()          # Pygame의 모든 하위 모듈(화면, 이벤트 등)을 초기화
+pygame.mixer.init()    # 사운드 재생을 위한 믹서 모듈을 별도로 초기화
 
 WIDTH, HEIGHT = 800, 500
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen = pygame.display.set_mode((WIDTH, HEIGHT))          # 실제 그림이 그려질 화면(Surface) 생성
 pygame.display.set_caption(&quot;물리 실습: 중력 &amp; 반사각 - 통통 튀는 공&quot;)
-clock = pygame.time.Clock()
+clock = pygame.time.Clock()                                 # 프레임 속도 제어 + 델타 타임 측정용 시계
 
-ball_img = pygame.image.load(&quot;assets/ball.png&quot;).convert_alpha()
-BALL_RADIUS = ball_img.get_width() // 2 - 8   # 이미지 여백(글로우)을 뺀 실제 충돌 반경
+# ---- 이미지/사운드/폰트 에셋 로드 (assets 폴더와 같은 위치에서 실행해야 함) ----
+ball_img = pygame.image.load(&quot;assets/ball.png&quot;).convert_alpha()   # convert_alpha(): 투명도(알파) 채널을 화면 포맷에 맞춰 최적화, 이후 blit 속도가 빨라짐
+BALL_RADIUS = ball_img.get_width() // 2 - 8   # 이미지 파일에는 은은한 글로우(여백)가 포함돼 있어, 실제 &quot;충돌에 쓸 반경&quot;은 이미지 절반 크기보다 살짝 작게 잡는다
 
-bounce_sound = pygame.mixer.Sound(&quot;assets/bounce.wav&quot;)
-launch_sound = pygame.mixer.Sound(&quot;assets/launch.wav&quot;)
+bounce_sound = pygame.mixer.Sound(&quot;assets/bounce.wav&quot;)   # 바닥/벽에 튕길 때 재생
+launch_sound = pygame.mixer.Sound(&quot;assets/launch.wav&quot;)   # 새총으로 발사할 때 재생
 
+# 시스템 폰트(SysFont) 대신 assets 폴더의 폰트 파일을 직접 경로로 불러온다.
+# -&gt; Windows의 &quot;맑은 고딕&quot; 이름에 의존하지 않으므로, macOS/Linux에서도 한글이 동일하게 표시된다.
 font = pygame.font.Font(&quot;assets/NanumGothic-Regular.ttf&quot;, 22)
 
-GRAVITY = 900.0          # 초당 속도 증가량(px/s^2). 지구 중력가속도를 게임 스케일로 옮긴 값
-RESTITUTION = 0.72        # 반발 계수(0~1). 1이면 에너지 손실 없이 튕기고, 0이면 아예 안 튕김
-MIN_BOUNCE_SPEED = 40      # 이 속도보다 느리게 튕기면 멈춘 것으로 간주
+# ---- 물리 상수 3가지: 이 값을 바꿔보면 공의 &quot;느낌&quot;이 확 달라진다 ----
+GRAVITY = 900.0            # 중력 가속도(px/s^2). 클수록 더 빨리, 더 무겁게 떨어진다
+RESTITUTION = 0.72         # 반발 계수(0~1). 1이면 에너지 손실 없이 영원히 튀고, 0이면 아예 안 튐
+MIN_BOUNCE_SPEED = 40      # 이 속도보다 느리게 부딪히면 &quot;이미 거의 멈췄다&quot;고 보고 완전히 정지시킴
+                           # (없으면 부동소수점 오차 때문에 바닥 위에서 미세하게 계속 떨림)
 
 
 class Ball:
     def __init__(self, x, y):
-        # pygame.Vector2로 위치와 속도를 하나의 벡터 값으로 관리
-        self.pos = pygame.Vector2(x, y)
-        self.vel = pygame.Vector2(0, 0)
+        # pygame.Vector2 하나로 (x, y) 두 좌표를 함께 다룰 수 있다.
+        # -&gt; &quot;위치&quot;와 &quot;속도&quot;라는 서로 다른 두 벡터를 각각 하나의 변수로 관리하는 것이 핵심 아이디어.
+        self.pos = pygame.Vector2(x, y)   # 현재 위치
+        self.vel = pygame.Vector2(0, 0)   # 현재 속도 (처음엔 정지 상태)
         self.radius = BALL_RADIUS
 
     def update(self, dt):
-        # ---- 중력 적용: 매 프레임 아래 방향(y+) 속도를 조금씩 늘린다 ----
+        # ============================================================
+        # [핵심 알고리즘] 중력 + 이동 + 바닥/벽 충돌 반사
+        # ------------------------------------------------------------
+        # ① 중력 적용
+        #    현실의 중력은 &quot;속도&quot;가 아니라 &quot;가속도&quot;가 일정하다.
+        #    그래서 위치를 바로 바꾸지 않고, 매 프레임 속도(vel.y)를 GRAVITY*dt만큼 늘린다.
+        #    Pygame 좌표계는 y가 아래로 증가하므로, y속도가 계속 커지는 것 = 점점 빠르게 &quot;떨어지는&quot; 것.
         self.vel.y += GRAVITY * dt
 
-        # ---- 속도만큼 위치 이동 (dt를 곱해 프레임률과 무관하게 동일한 이동거리 보장) ----
+        # ② 위치 이동
+        #    바뀐 속도만큼 위치를 옮긴다. dt(경과 시간)를 곱해야 컴퓨터 성능(프레임률)과
+        #    무관하게 항상 &quot;1초에 이동하는 실제 거리&quot;가 같아진다. (델타 타임 기반 이동)
         self.pos += self.vel * dt
 
-        # ---- 바닥과의 충돌 ----
-        floor_y = HEIGHT - self.radius
+        # ③ 바닥과의 충돌 처리
+        floor_y = HEIGHT - self.radius   # 공의 &quot;중심&quot;이 여기까지 내려오면 바닥에 완전히 닿은 것
         if self.pos.y &gt; floor_y:
+            # 위치 보정이 반드시 먼저! dt가 큰 프레임에서는 공이 바닥을 살짝 뚫고 들어갈 수 있는데,
+            # 속도를 반전시키기 전에 위치를 floor_y로 강제로 맞춰야 다음 프레임에 자연스럽게 튀어 오른다.
             self.pos.y = floor_y
+
             if abs(self.vel.y) &gt; MIN_BOUNCE_SPEED:
-                self.vel.y = -self.vel.y * RESTITUTION  # y속도를 반전 + 반발계수만큼 감쇠
+                # &quot;반사&quot;의 핵심: 충돌면(바닥)에 수직인 성분(y)만 부호를 뒤집는다.
+                # 여기에 RESTITUTION(반발 계수)을 곱해 튈 때마다 에너지가 조금씩 줄어들게 한다.
+                self.vel.y = -self.vel.y * RESTITUTION
                 bounce_sound.play()
             else:
-                self.vel.y = 0  # 거의 멈췄으면 완전히 정지시켜 바닥에서 미세하게 떠는 것 방지
+                # 튕겨봤자 의미 없을 만큼 느리면 아예 0으로 만들어 완전히 멈춘 것으로 처리
+                self.vel.y = 0
 
-        # ---- 좌우 벽과의 충돌 ----
+        # ④ 좌우 벽과의 충돌 처리 (바닥과 똑같은 원리를 x축에 적용)
         if self.pos.x &lt; self.radius:
-            self.pos.x = self.radius
-            self.vel.x = -self.vel.x * RESTITUTION
+            self.pos.x = self.radius                    # 왼쪽 벽 밖으로 나가지 않도록 위치 보정
+            self.vel.x = -self.vel.x * RESTITUTION       # x속도만 반전 + 감쇠
             if abs(self.vel.x) &gt; MIN_BOUNCE_SPEED:
                 bounce_sound.play()
         elif self.pos.x &gt; WIDTH - self.radius:
-            self.pos.x = WIDTH - self.radius
+            self.pos.x = WIDTH - self.radius             # 오른쪽 벽 밖으로 나가지 않도록 위치 보정
             self.vel.x = -self.vel.x * RESTITUTION
             if abs(self.vel.x) &gt; MIN_BOUNCE_SPEED:
                 bounce_sound.play()
 
-        # ---- 좌우 감속(공기 저항 느낌) ----
+        # ⑤ 공기 저항 느낌 (선택 사항)
+        #    매 프레임 x속도를 아주 조금(0.1%)씩 줄여서, 좌우로 계속 튀기만 하지 않고
+        #    시간이 지나면 서서히 잦아들도록 만든다.
         self.vel.x *= 0.999
+        # ============================================================
 
     def draw(self, surface):
+        # 이미지의 &quot;중심&quot;이 공의 위치(self.pos)에 오도록 좌표를 계산해서 그린다
         rect = ball_img.get_rect(center=(self.pos.x, self.pos.y))
         surface.blit(ball_img, rect)
 
 
-balls = [Ball(WIDTH // 2, 80)]
+balls = [Ball(WIDTH // 2, 80)]   # 시작할 때 화면 위쪽에 공 하나를 배치
 
-# ---- 새총처럼 마우스로 드래그해서 발사하는 상태 ----
-dragging = False
-drag_start = pygame.Vector2()
-MAX_DRAG = 160      # 드래그 최대 거리(px). 이보다 멀리 당겨도 힘은 더 세지지 않음
-MAX_LAUNCH_SPEED = 900
+# ---- 새총처럼 마우스로 드래그해서 발사하는 상태를 저장하는 변수들 ----
+dragging = False               # 지금 마우스를 누른 채 드래그 중인지 여부
+drag_start = pygame.Vector2()  # 드래그를 시작한 지점(마우스를 처음 누른 위치)
+MAX_DRAG = 160                 # 드래그 최대 인정 거리(px). 이보다 더 멀리 당겨도 세기는 더 안 세짐
+MAX_LAUNCH_SPEED = 900         # 최대로 당겼을 때 나오는 속력(px/s)
 
 running = True
 while running:
-    dt = clock.tick(60) / 1000.0  # 밀리초 -&gt; 초 단위로 변환 (물리 계산은 &#x27;초&#x27; 기준이 직관적)
+    dt = clock.tick(60) / 1000.0
+    # clock.tick(60): 60fps를 목표로 속도를 맞추고, 이번 프레임에 &quot;실제로 걸린 시간&quot;을 ms로 반환.
+    # 그 값을 1000으로 나눠 &#x27;초&#x27; 단위로 바꾼다. 물리 공식(GRAVITY*dt 등)은 초 단위가 훨씬 직관적이다.
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -535,43 +577,65 @@ while running:
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             running = False
         elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-            balls = [Ball(WIDTH // 2, 80)]
+            balls = [Ball(WIDTH // 2, 80)]   # R 키: 공을 하나만 남기고 초기 위치로 리셋
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
+            # 마우스를 누른 순간 = 드래그 시작. 이 위치를 &quot;새총의 고정점&quot;으로 기억해둔다.
             dragging = True
             drag_start = pygame.Vector2(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONUP and dragging:
+            # 마우스를 뗀 순간 = 드래그 종료 → 이때 실제로 공을 발사한다.
             dragging = False
             drag_end = pygame.Vector2(event.pos)
 
-            # ---- 드래그 벡터로 발사 각도 &amp; 세기 계산 ----
-            pull = drag_start - drag_end        # 당긴 방향의 반대가 발사 방향(새총 원리)
+            # ============================================================
+            # [핵심 알고리즘] 드래그 벡터 → 발사 각도 · 세기 → 속도 벡터
+            # ------------------------------------------------------------
+            # ① 발사 방향 구하기 (새총 원리)
+            #    새총은 &quot;당긴 방향의 반대&quot;로 날아간다. 그래서 끝점(놓은 지점)에서
+            #    시작점(처음 누른 지점)을 향하는 벡터, 즉 (drag_start - drag_end)가 곧 발사 방향이다.
+            pull = drag_start - drag_end
+            # ② 드래그 거리를 세기로 변환하되, MAX_DRAG로 상한선을 둔다
+            #    (화면 밖까지 무한정 당겨도 발사 속도가 너무 세지지 않도록 제한)
             distance = min(pull.length(), MAX_DRAG)
-            if distance &gt; 5:
-                angle = math.atan2(pull.y, pull.x)   # 라디안 각도 계산
+
+            if distance &gt; 5:   # 아주 살짝만 드래그했다 놓은 경우(사실상 클릭)는 발사하지 않음
+                # ③ 각도 계산
+                #    math.atan2(y, x)는 벡터 (x, y)가 이루는 각도를 라디안으로 돌려준다.
+                #    일반 atan(y/x)와 달리 x가 0이거나 음수여도 모든 방향(−π~π)을 정확히 구분한다.
+                #    주의: 인자 순서가 (y, x)로, x가 먼저 아니라 y가 먼저다!
+                angle = math.atan2(pull.y, pull.x)
+
+                # ④ 세기(속력) 계산
+                #    당긴 거리의 비율(0~1)에 최대 속력을 곱해, 많이 당길수록 더 빠르게 발사되게 한다.
                 power = (distance / MAX_DRAG) * MAX_LAUNCH_SPEED
 
-                new_ball = Ball(drag_start.x, drag_start.y)
+                # ⑤ 각도 + 속력 → 속도 벡터(x성분, y성분)
+                #    cos(각도)는 그 각도의 &quot;가로 방향 비율&quot;, sin(각도)는 &quot;세로 방향 비율&quot;이다.
+                #    이 둘에 속력(power)을 곱하면 최종 x, y 방향 속도 성분이 나온다.
+                new_ball = Ball(drag_start.x, drag_start.y)   # 새 공은 &quot;당긴 지점&quot;에서 태어난다
                 new_ball.vel.x = math.cos(angle) * power
                 new_ball.vel.y = math.sin(angle) * power
+
                 balls.append(new_ball)
                 launch_sound.play()
+            # ============================================================
 
     for ball in balls:
-        ball.update(dt)
+        ball.update(dt)   # 공마다 이번 프레임의 물리(중력+충돌)를 계산
 
-    # ---- 화면 그리기 ----
-    screen.fill((24, 28, 40))
+    # ---- 화면 그리기 (매 프레임 전체를 새로 그림) ----
+    screen.fill((24, 28, 40))   # 이전 프레임의 잔상이 남지 않도록 배경을 먼저 단색으로 덮는다
 
-    # 드래그 중이면 조준선을 그려서 방향/세기를 시각적으로 보여준다
+    # 드래그 중이면, 지금 놓았을 때 어느 방향·세기로 발사될지 조준선으로 미리 보여준다
     if dragging:
         mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
-        pull = drag_start - mouse_pos
+        pull = drag_start - mouse_pos                       # 위 발사 로직과 동일한 계산을 실시간으로 반복
         distance = min(pull.length(), MAX_DRAG)
         if distance &gt; 2:
-            direction = pull.normalize()
-            end_point = drag_start + direction * distance
+            direction = pull.normalize()                     # 방향만 남기고 길이를 1로 만든 단위 벡터
+            end_point = drag_start + direction * distance     # 조준선의 끝점 = 시작점 + (방향 * 거리)
             pygame.draw.line(screen, (255, 210, 90), drag_start, end_point, 3)
             pygame.draw.circle(screen, (255, 210, 90), (int(end_point.x), int(end_point.y)), 5)
 
@@ -581,7 +645,7 @@ while running:
     hint = font.render(&quot;드래그해서 공을 발사 (새총 방식) · R: 초기화 · ESC: 종료&quot;, True, (200, 205, 220))
     screen.blit(hint, (16, HEIGHT - 34))
 
-    pygame.display.flip()
+    pygame.display.flip()   # 지금까지 그린 내용을 실제 화면에 한 번에 표시(더블 버퍼링)
 
 pygame.quit()
 sys.exit()
@@ -662,7 +726,22 @@ y = center.y + math.sin(angle) * radius   # 중심 + (반지름 * sin) = y좌표
   <div class="code-wrapper">
     <div class="filename">math_patterns_demo.py</div>
     <button class="copy-btn" onclick="copyCode(this)">복사</button>
-    <pre id="code-math">import pygame
+    <pre id="code-math">&quot;&quot;&quot;
+물리와 수학 심화: 게임에서 자주 쓰는 벡터 패턴 3가지
+=========================================================
+[이번 주차 핵심 학습 내용]
+  같은 &quot;목표를 따라가는 움직임&quot;이라도 구현 방식에 따라 완전히 다른 느낌을 준다.
+  이번 실습은 실무에서 정말 자주 쓰이는 세 가지 패턴을 나란히 비교하며 익힌다.
+
+    1) SEEK  : 목표까지의 방향을 정규화(normalize)해 &quot;일정한 속력&quot;으로 추적   → 몬스터 추격 AI
+    2) LERP  : 남은 거리의 &quot;일정 비율&quot;만큼씩 보간(lerp)해 부드럽게 따라가기   → 카메라 추적
+    3) ORBIT : 각도를 누적하며 cos·sin으로 원 둘레 좌표를 계산               → 보스 패턴, 회전 장애물
+
+  세 클래스(Seeker, LerpFollower, Orbiter)의 update() 메서드가 이번 시간의 핵심 알고리즘이다.
+  나머지(창 생성, 모드 전환 UI 등)는 이전 실습에서 다룬 내용을 재사용한다.
+&quot;&quot;&quot;
+
+import pygame
 import sys
 import math
 
@@ -677,10 +756,11 @@ ball_img = pygame.image.load(&quot;assets/ball.png&quot;).convert_alpha()
 font = pygame.font.Font(&quot;assets/NanumGothic-Regular.ttf&quot;, 22)
 font_small = pygame.font.Font(&quot;assets/NanumGothic-Regular.ttf&quot;, 16)
 
+# 세 가지 패턴을 숫자키로 전환하기 위한 모드 상수
 MODE_SEEK = 1
 MODE_LERP = 2
 MODE_ORBIT = 3
-mode = MODE_SEEK
+mode = MODE_SEEK   # 처음 실행하면 SEEK 모드로 시작
 
 
 # =========================================================
@@ -689,21 +769,43 @@ mode = MODE_SEEK
 class Seeker:
     def __init__(self):
         self.pos = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
-        self.angle = 0.0          # 현재 바라보는 방향(도 단위)
-        self.speed = 260          # px/s
+        self.angle = 0.0          # 현재 바라보는 방향(도 단위) — draw()에서 회전에 사용
+        self.speed = 260          # px/s. 거리와 상관없이 항상 이 속력으로 이동한다
 
     def update(self, dt, target):
+        # ============================================================
+        # [핵심 알고리즘] SEEK — 방향 정규화 + 고정 속력 이동
+        # ------------------------------------------------------------
+        # ① 목표까지의 벡터 구하기
+        #    to_target = target - self.pos
+        #    → 이 벡터의 &quot;길이&quot;는 거리, &quot;방향&quot;은 목표가 있는 쪽을 가리킨다.
         to_target = target - self.pos
-        if to_target.length() &gt; 4:               # 너무 가까우면 정규화 시 오류가 나므로 방지
-            direction = to_target.normalize()      # 방향만 남기고 길이를 1로 만듦
+
+        # ② 너무 가까우면 정규화하지 않는다
+        #    길이가 0에 가까운 벡터를 normalize()하면 0으로 나누게 되어 오류가 난다.
+        #    (거의 다 도착했을 때 이 문제를 피하기 위한 방어 코드)
+        if to_target.length() &gt; 4:
+            # ③ 방향만 남기고 길이를 1로 만든다 (단위 벡터)
+            #    → &quot;거리&quot;라는 정보는 버리고 &quot;어느 쪽으로 가야 하는지&quot;만 남긴다.
+            direction = to_target.normalize()
+
+            # ④ 그 방향으로 &quot;일정한 속력&quot;만큼 이동
+            #    거리가 멀든 가깝든 매 프레임 이동하는 속력은 항상 self.speed로 동일하다.
+            #    (이 점이 아래 LERP 패턴과 가장 큰 차이다 — LERP는 거리에 비례해서 속력이 변한다)
             self.pos += direction * self.speed * dt
-            # atan2로 목표를 향한 각도를 구해 도형이 진행 방향을 바라보게 회전
+
+            # ⑤ 이동 방향으로 도형을 회전시키기 위한 각도 계산
+            #    atan2(y, x)로 방향 벡터의 각도(라디안)를 구하고, degrees()로 도(degree) 단위로 변환.
+            #    이렇게 구한 각도를 draw()에서 그대로 이미지 회전에 사용한다.
             self.angle = math.degrees(math.atan2(direction.y, direction.x))
+        # ============================================================
 
     def draw(self, surface):
-        # 뾰족한 삼각형(화살촉 모양)을 그린 뒤 이동 방향으로 회전시켜 blit
+        # 뾰족한 삼각형(화살촉 모양)을 그린 뒤, update()에서 구한 각도만큼 회전시켜 blit한다.
         tri = pygame.Surface((40, 30), pygame.SRCALPHA)
         pygame.draw.polygon(tri, (90, 200, 255), [(40, 15), (0, 0), (10, 15), (0, 30)])
+        # pygame.transform.rotate()는 도 단위 + 반시계 방향 기준이라, 화면 좌표계(y가 아래로 증가)와
+        # 방향이 반대이므로 -self.angle 처럼 부호를 뒤집어야 실제 이동 방향과 화살촉이 일치한다.
         rotated = pygame.transform.rotate(tri, -self.angle)
         rect = rotated.get_rect(center=self.pos)
         surface.blit(rotated, rect)
@@ -715,11 +817,22 @@ class Seeker:
 class LerpFollower:
     def __init__(self):
         self.pos = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
-        self.smoothing = 0.08     # 한 프레임에 남은 거리의 8%만큼 따라감 (0~1)
+        self.smoothing = 0.08     # 한 프레임에 &quot;남은 거리&quot;의 8%만큼만 따라간다 (0~1 사이 값)
 
     def update(self, dt, target):
-        # Vector2.lerp(목표, t) : 현재 위치와 목표 사이를 t(0~1) 비율만큼 보간한 위치를 반환
+        # ============================================================
+        # [핵심 알고리즘] LERP(선형 보간) — 남은 거리의 일정 비율만큼 이동
+        # ------------------------------------------------------------
+        # Vector2.lerp(목표, t) 는 &quot;현재 위치&quot;와 &quot;목표&quot; 사이를 t(0~1) 비율로 보간한
+        # 새로운 위치를 계산해서 돌려준다. t=0이면 제자리, t=1이면 목표에 순간 이동.
+        #
+        # 매 프레임 작은 t(예: 0.08)를 반복 적용하면:
+        #  - 처음엔 목표와 멀리 떨어져 있어 &quot;많이&quot; 이동하고,
+        #  - 목표에 가까워질수록 남은 거리 자체가 줄어들어 &quot;조금씩&quot; 이동하게 된다.
+        # 그 결과 SEEK처럼 일정한 속력이 아니라, 처음엔 빠르게 · 도착할수록 느려지는
+        # &quot;관성이 있는 듯한&quot; 부드러운 움직임이 만들어진다. (카메라 추적에 널리 쓰이는 이유)
         self.pos = self.pos.lerp(target, self.smoothing)
+        # ============================================================
 
     def draw(self, surface):
         rect = ball_img.get_rect(center=self.pos)
@@ -731,21 +844,31 @@ class LerpFollower:
 # =========================================================
 class Orbiter:
     def __init__(self):
-        self.center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)
-        self.radius = 140
-        self.angle = 0.0          # 라디안
-        self.angular_speed = 2.0  # 초당 라디안 변화량 (2π ≈ 6.28이 한 바퀴)
+        self.center = pygame.Vector2(WIDTH // 2, HEIGHT // 2)   # 회전의 중심점
+        self.radius = 140                                        # 중심에서 얼마나 떨어져 돌 것인가
+        self.angle = 0.0          # 현재까지 누적된 각도 (라디안)
+        self.angular_speed = 2.0  # 초당 각도 변화량(라디안/s). math.tau(2π≈6.28)가 한 바퀴이므로
+                                   # 2.0이면 한 바퀴 도는 데 약 3.14초 걸린다는 뜻
 
     def update(self, dt, target):
+        # ============================================================
+        # [핵심 알고리즘] 원운동 — 각도 누적 + 삼각함수로 좌표 변환
+        # ------------------------------------------------------------
+        # ① 매 프레임 각도를 조금씩 증가시킨다 (시간이 지날수록 계속 회전)
         self.angle += self.angular_speed * dt
-        # 중심점 + (반지름 * cos, 반지름 * sin) = 원 둘레 위의 좌표
+
+        # ② &quot;중심점 + (반지름 × cos(각도), 반지름 × sin(각도))&quot; = 그 각도에 해당하는 원 둘레 위의 좌표
+        #    cos(각도)는 그 각도만큼 회전했을 때의 &quot;가로 방향 비율&quot;,
+        #    sin(각도)는 &quot;세로 방향 비율&quot;이며, 여기에 반지름을 곱하면 실제 거리(픽셀)가 된다.
+        #    이 값을 중심점에 더하면 &quot;중심에서 그 방향으로 radius만큼 떨어진 위치&quot;가 나온다.
         self.pos = self.center + pygame.Vector2(
             math.cos(self.angle) * self.radius,
             math.sin(self.angle) * self.radius,
         )
+        # ============================================================
 
     def draw(self, surface):
-        pygame.draw.circle(surface, (60, 70, 100), self.center, self.radius, 1)  # 궤도 안내선
+        pygame.draw.circle(surface, (60, 70, 100), self.center, self.radius, 1)  # 궤도를 얇은 원으로 시각화
         rect = ball_img.get_rect(center=self.pos)
         surface.blit(ball_img, rect)
 
@@ -754,6 +877,8 @@ seeker = Seeker()
 lerp_follower = LerpFollower()
 orbiter = Orbiter()
 
+# 모드 번호를 키로, 해당 객체를 값으로 갖는 딕셔너리.
+# if/elif를 늘어놓는 대신 objects[mode] 한 줄로 &quot;현재 모드의 객체&quot;를 즉시 꺼내 쓸 수 있다.
 objects = {MODE_SEEK: seeker, MODE_LERP: lerp_follower, MODE_ORBIT: orbiter}
 descriptions = {
     MODE_SEEK: &quot;SEEK — 목표 방향 벡터를 정규화(normalize)해 일정 속도로 추적 (적 AI 추격에 활용)&quot;,
@@ -764,7 +889,7 @@ descriptions = {
 running = True
 while running:
     dt = clock.tick(60) / 1000.0
-    mouse_target = pygame.Vector2(pygame.mouse.get_pos())
+    mouse_target = pygame.Vector2(pygame.mouse.get_pos())   # 세 패턴 모두 &quot;마우스 위치&quot;를 목표로 사용
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -773,17 +898,19 @@ while running:
             if event.key == pygame.K_ESCAPE:
                 running = False
             elif event.key == pygame.K_1:
-                mode = MODE_SEEK
+                mode = MODE_SEEK      # 숫자키 1 -&gt; SEEK 패턴으로 전환
             elif event.key == pygame.K_2:
-                mode = MODE_LERP
+                mode = MODE_LERP      # 숫자키 2 -&gt; LERP 패턴으로 전환
             elif event.key == pygame.K_3:
-                mode = MODE_ORBIT
+                mode = MODE_ORBIT     # 숫자키 3 -&gt; ORBIT 패턴으로 전환
 
+    # 현재 선택된 모드의 객체만 업데이트/드로우한다 (나머지 두 객체는 이번 프레임에 관여하지 않음)
     objects[mode].update(dt, mouse_target)
 
     screen.fill((24, 28, 40))
     objects[mode].draw(screen)
 
+    # 화면 상단에 현재 모드 이름 + 설명, 하단에 조작법 안내를 표시
     title = font.render(f&quot;[{mode}] &quot; + descriptions[mode].split(&quot; — &quot;)[0], True, (255, 220, 140))
     desc = font_small.render(descriptions[mode], True, (190, 195, 210))
     hint = font_small.render(&quot;숫자키 1·2·3으로 패턴 전환 · 마우스를 움직여 보세요 · ESC: 종료&quot;, True, (150, 155, 175))
@@ -879,7 +1006,24 @@ self.angle = math.degrees(math.atan2(direction.y, direction.x))</pre></div>
   <div class="code-wrapper">
     <div class="filename">particle_screen_effects_demo.py</div>
     <button class="copy-btn" onclick="copyCode(this)">복사</button>
-    <pre id="code-fx">import pygame
+    <pre id="code-fx">&quot;&quot;&quot;
+고급 화면 연출: 파티클 폭발 &amp; 화면 흔들림 &amp; 패럴랙스 &amp; 페이드
+=================================================================
+[이번 주차 핵심 학습 내용]
+  실습3에서 만든 &quot;물리적으로 정확한&quot; 공 튕기기 위에, 눈으로 보이는 연출(Juice)을
+  얹어서 같은 충돌이 훨씬 임팩트 있게 느껴지도록 만든다. 네 가지 기법을 다룬다.
+
+    1) 파티클 시스템     : 수십 개의 작은 점을 무작위 방향으로 흩뿌려 &quot;폭발&quot; 표현
+    2) 화면 흔들림        : 그리는 좌표를 매 프레임 살짝씩 무작위로 어긋내 &quot;떨림&quot; 표현
+    3) 패럴랙스 스크롤링  : 배경 레이어마다 다른 속도로 움직여 &quot;원근감(입체감)&quot; 표현
+    4) 페이드 인           : 화면을 덮은 검은 오버레이의 투명도를 서서히 낮춰 &quot;등장&quot; 표현
+
+  아래 표시된 부분들이 이번 시간의 핵심 알고리즘이다. Ball 클래스의 물리 부분은
+  실습3에서 이미 다룬 내용을 그대로 재사용하되, 세게 부딪혔을 때 이펙트를 함께
+  발생시키는 &quot;훅(hook)&quot;만 새로 추가되었다.
+&quot;&quot;&quot;
+
+import pygame
 import sys
 import math
 import random
@@ -901,10 +1045,12 @@ boom_sound = pygame.mixer.Sound(&quot;assets/boom.wav&quot;)
 
 font = pygame.font.Font(&quot;assets/NanumGothic-Regular.ttf&quot;, 22)
 
+# ---- 실습3과 동일한 물리 상수 ----
 GRAVITY = 900.0
 RESTITUTION = 0.72
 MIN_BOUNCE_SPEED = 40
-HARD_IMPACT_SPEED = 260   # 이 속도 이상으로 충돌해야 &quot;강한 충돌&quot;로 간주해 파티클/흔들림 발생
+HARD_IMPACT_SPEED = 260   # 이 속도 이상으로 충돌해야 &quot;강한 충돌&quot;로 간주해 파티클/흔들림을 발생시킨다
+                          # (모든 충돌마다 이펙트를 넣으면 화면이 지저분해지고, 정말 세게 맞은 순간이 묻혀버린다)
 
 
 # =========================================================
@@ -916,43 +1062,66 @@ class Particle:
     def __init__(self, pos, color):
         self.pos = pygame.Vector2(pos)
 
-        # 사방으로 무작위 각도 + 무작위 속력으로 튀어나가도록 벡터 계산
-        angle = random.uniform(0, math.tau)     # 0 ~ 2π (라디안 전체 범위)
+        # ============================================================
+        # [핵심 알고리즘] 사방으로 무작위 각도 + 무작위 속력으로 튀어나가는 속도 벡터
+        # ------------------------------------------------------------
+        # math.tau는 2π(약 6.283). 0~2π 사이에서 각도를 무작위로 뽑으면
+        # &quot;360도 전체 방향 중 하나&quot;를 균등한 확률로 고를 수 있다.
+        angle = random.uniform(0, math.tau)
+        # 속력도 무작위로 달리 주면, 모든 파티클이 같은 거리만큼만 퍼지는
+        # &quot;링(도넛) 모양&quot;이 아니라 자연스럽게 흩어지는 폭발처럼 보인다.
         speed = random.uniform(80, 260)
+        # cos(각도)·sin(각도)로 그 각도만큼의 x, y 방향 성분을 구하고, 여기에 속력을 곱해
+        # 최종 속도 벡터를 만든다. (실습3의 발사 각도 계산과 완전히 같은 원리)
         self.vel = pygame.Vector2(math.cos(angle), math.sin(angle)) * speed
+        # ============================================================
 
         self.color = color
-        self.life = random.uniform(0.35, 0.7)   # 살아있는 시간(초)
-        self.age = 0.0
+        self.life = random.uniform(0.35, 0.7)   # 살아있는 시간(초). 파티클마다 다르게 주어 자연스러움을 더함
+        self.age = 0.0                            # 태어난 뒤 지금까지 지난 시간
         self.radius = random.uniform(2, 4)
 
     def update(self, dt):
-        self.age += dt
-        self.vel.y += GRAVITY * 0.6 * dt   # 파티클도 살짝 중력의 영향을 받아 아래로 떨어짐
-        self.pos += self.vel * dt
-        self.vel *= 0.96                    # 공기 저항으로 서서히 느려짐
+        # ============================================================
+        # [핵심 알고리즘] 파티클도 살짝 중력을 받으며 이동 + 감속
+        # ------------------------------------------------------------
+        self.age += dt                       # 나이를 늘려야 is_dead()가 정상적으로 동작한다
+        self.vel.y += GRAVITY * 0.6 * dt      # 공보다 약하게(0.6배) 중력을 적용해 서서히 아래로 떨어지게 함
+        self.pos += self.vel * dt             # 속도만큼 위치 이동 (실습3과 동일한 델타 타임 이동)
+        self.vel *= 0.96                      # 매 프레임 속도를 4%씩 줄여, 공기 저항으로 서서히 느려지는 느낌
+        # ============================================================
 
     def is_dead(self):
+        # 나이가 수명을 넘어서면 &quot;죽은&quot; 파티클로 판정 → 메인 루프에서 리스트에서 제거된다
         return self.age &gt;= self.life
 
     def draw(self, surface, offset):
-        # 남은 수명 비율(0~1)에 따라 점점 투명해지고 작아지도록 계산
+        # ============================================================
+        # [핵심 알고리즘] 남은 수명 비율에 따라 점점 투명해지고 작아지도록 계산
+        # ------------------------------------------------------------
+        # age/life는 &quot;수명을 얼마나 소진했는지&quot;를 0(막 태어남)~1(수명 종료) 비율로 나타낸다.
+        # 1에서 그 값을 빼면 &quot;얼마나 남았는지&quot;가 되고, 이 비율(t)을 알파값·반지름에 그대로
+        # 곱하면 시간이 지날수록 자연스럽게 작아지고 투명해지는 소멸 효과가 만들어진다.
         t = 1 - (self.age / self.life)
-        alpha = max(0, int(255 * t))
-        radius = max(1, self.radius * t)
+        alpha = max(0, int(255 * t))            # 255(완전 불투명) ~ 0(완전 투명)
+        radius = max(1, self.radius * t)        # 최소 1은 유지해 반지름이 0/음수가 되지 않게 함
+        # ============================================================
 
+        # SRCALPHA Surface를 새로 만들어야 파티클마다 다른 투명도(alpha)를 줄 수 있다
         particle_surf = pygame.Surface((radius * 2 + 2, radius * 2 + 2), pygame.SRCALPHA)
         pygame.draw.circle(particle_surf, (*self.color, alpha),
                             (radius + 1, radius + 1), radius)
+        # 화면 흔들림 오프셋(offset)을 여기서도 더해줘야, 공·배경과 함께 파티클도 같이 흔들린다
         surface.blit(particle_surf, (self.pos.x - radius - 1 + offset.x,
                                       self.pos.y - radius - 1 + offset.y))
 
 
-particles = []
-PARTICLE_COLORS = [(255, 200, 90), (255, 140, 60), (255, 90, 60), (255, 230, 160)]
+particles = []   # 현재 살아있는 모든 파티클을 담아두는 리스트
+PARTICLE_COLORS = [(255, 200, 90), (255, 140, 60), (255, 90, 60), (255, 230, 160)]   # 주황~빨강 계열 랜덤 색상 팔레트
 
 
 def spawn_burst(pos, count=18):
+    &quot;&quot;&quot;지정한 위치에서 파티클 count개를 한 번에 터뜨린다 (폭발 한 번 = Particle 여러 개 생성).&quot;&quot;&quot;
     for _ in range(count):
         particles.append(Particle(pos, random.choice(PARTICLE_COLORS)))
 
@@ -964,25 +1133,34 @@ class ScreenShake:
     &quot;&quot;&quot;흔들림이 필요한 순간 trigger()만 호출하면, 이후 몇 프레임 동안 offset이 자동으로 계산된다.&quot;&quot;&quot;
 
     def __init__(self):
-        self.duration = 0.0
-        self.timer = 0.0
-        self.magnitude = 0.0
+        self.duration = 0.0   # 이번에 흔들리는 총 지속 시간(초)
+        self.timer = 0.0      # 남은 시간(초). 0이 되면 흔들림이 끝난 것
+        self.magnitude = 0.0  # 흔들림의 최대 세기(픽셀)
 
     def trigger(self, duration=0.25, magnitude=10):
+        # 충돌 등 &quot;흔들려야 하는 순간&quot;에 이 메서드 한 번만 호출하면 나머지는 자동으로 처리된다
         self.duration = duration
         self.timer = duration
         self.magnitude = magnitude
 
     def update(self, dt):
+        # 남은 시간을 매 프레임 dt만큼 줄인다 (0 밑으로는 안 내려가도 문제없음 — get_offset에서 걸러줌)
         if self.timer &gt; 0:
             self.timer -= dt
 
     def get_offset(self):
+        # ============================================================
+        # [핵심 알고리즘] 남은 시간 비율만큼 세기를 감쇠시킨 무작위 오프셋
+        # ------------------------------------------------------------
         if self.timer &lt;= 0:
-            return pygame.Vector2(0, 0)
-        # 남은 시간 비율만큼 흔들림 세기를 줄여서(감쇠), 점점 잦아드는 느낌을 준다
+            return pygame.Vector2(0, 0)   # 흔들림이 끝났으면 오프셋 없음(제자리)
+
+        # timer/duration은 &quot;얼마나 남았는지&quot; 비율(1→0으로 감소). 이 비율을 magnitude에 곱하면
+        # 흔들림이 시작될 때는 세게, 끝나갈수록 약하게 — 점점 잦아드는 느낌을 준다.
         power = self.magnitude * (self.timer / self.duration)
+        # -power ~ +power 범위의 무작위 x, y를 매 프레임 새로 뽑아 &quot;불규칙하게 떨리는&quot; 효과를 만든다
         return pygame.Vector2(random.uniform(-power, power), random.uniform(-power, power))
+        # ============================================================
 
 
 shake = ScreenShake()
@@ -993,39 +1171,51 @@ shake = ScreenShake()
 # =========================================================
 # 화면보다 넓은 가상의 배경을 만들어두고, 카메라(camera_x)가 이동한 만큼
 # 레이어마다 &quot;다른 비율&quot;로 스크롤시켜 원근감(입체감)을 표현한다.
-PATTERN_WIDTH = WIDTH * 2   # 한 번 반복되는 배경 패턴의 가로 폭
+PATTERN_WIDTH = WIDTH * 2   # 한 번 반복되는 배경 패턴의 가로 폭 (화면 폭의 2배로 넉넉하게)
 
-random.seed(7)  # 실행할 때마다 별/산 배치가 똑같이 나오도록 고정 (교육용 재현성)
+random.seed(7)  # 실행할 때마다 별/산 배치가 똑같이 나오도록 고정 (교육용 재현성 — 매번 다른 그림이면 설명하기 어려움)
 
-# 가장 먼 레이어: 별 — 아주 느리게 스크롤(factor 작음)
+# 가장 먼 레이어: 별 — 아주 느리게 스크롤(factor를 작게 줄 것이므로 위치는 지금 미리 계산해둔다)
 stars = [
     {&quot;x&quot;: random.uniform(0, PATTERN_WIDTH), &quot;y&quot;: random.uniform(20, 220), &quot;r&quot;: random.uniform(1, 2.4)}
     for _ in range(70)
 ]
 
-# 중간 레이어: 산 능선 — 중간 속도로 스크롤
+# 중간 레이어: 산 능선 — 일정 간격(90px)마다 높이를 무작위로 흔들어 톱니 모양 스카이라인을 만든다
 mountain_points_a = [(x, HEIGHT - 120 - random.uniform(0, 70)) for x in range(0, PATTERN_WIDTH + 1, 90)]
 
-# 가장 가까운 레이어: 낮은 언덕/풀숲 — 가장 빠르게 스크롤(factor = 1에 가까움)
+# 가장 가까운 레이어: 낮은 언덕/풀숲 — 더 촘촘한 간격(60px)으로 낮은 굴곡을 만든다
 hill_points = [(x, HEIGHT - 40 - random.uniform(0, 30)) for x in range(0, PATTERN_WIDTH + 1, 60)]
 
 
 def draw_parallax_layer(surface, offset_x, factor, draw_fn):
     &quot;&quot;&quot;factor가 작을수록(먼 배경) 적게 움직이고, 1에 가까울수록(가까운 배경) 카메라와 같은 속도로 움직인다.&quot;&quot;&quot;
+    # ============================================================
+    # [핵심 알고리즘] 카메라 이동량 × factor = 이 레이어만의 스크롤 값
+    # ------------------------------------------------------------
+    # 같은 camera_x라도 factor가 다르면 실제로 화면에서 밀리는 양이 달라진다.
+    # factor=0.05면 카메라가 100px 움직여도 이 레이어는 5px만 움직인 것처럼 보여
+    # &quot;아주 멀리 있는 것&quot;처럼 느껴지고, factor=0.6이면 훨씬 많이 움직여 &quot;가까이 있는 것&quot;처럼 보인다.
+    # %(나머지) 연산으로 스크롤 값을 PATTERN_WIDTH 범위 안에 가둬, 값이 한없이 커지지 않게 한다.
     scroll = (offset_x * factor) % PATTERN_WIDTH
-    # 화면 좌우 경계가 비지 않도록 패턴을 한 번 더 왼쪽/오른쪽에 겹쳐 그린다 (무한 스크롤처럼 보이게)
+
+    # 배경 패턴을 왼쪽/제자리/오른쪽 이렇게 3벌 겹쳐 그려야, 스크롤하는 동안 화면 좌우 끝에
+    # 빈 공간이 생기지 않고 마치 &quot;끝없이 이어지는&quot; 배경처럼 보인다 (무한 스크롤 트릭).
     for repeat in (-PATTERN_WIDTH, 0, PATTERN_WIDTH):
         draw_fn(surface, repeat - scroll)
+    # ============================================================
 
 
 def draw_stars(surface, dx):
     for s in stars:
         x = s[&quot;x&quot;] + dx
-        if -10 &lt; x &lt; WIDTH + 10:
+        if -10 &lt; x &lt; WIDTH + 10:   # 화면 밖에 있는 별은 그리지 않아 약간의 성능을 아낀다
             pygame.draw.circle(surface, (200, 210, 240), (int(x), int(s[&quot;y&quot;])), s[&quot;r&quot;])
 
 
 def draw_mountains(surface, dx):
+    # 미리 계산해둔 산 능선 점들에 dx(스크롤 오프셋)를 더해 이동시키고,
+    # 맨 앞뒤에 화면 바닥 좌표를 추가해 &quot;닫힌 도형&quot;(polygon)으로 완성한다
     pts = [(x + dx, y) for x, y in mountain_points_a]
     pts = [(dx, HEIGHT)] + pts + [(mountain_points_a[-1][0] + dx, HEIGHT)]
     pygame.draw.polygon(surface, (46, 58, 92), pts)
@@ -1038,10 +1228,10 @@ def draw_hills(surface, dx):
 
 
 def draw_background(surface, camera_x):
-    # 뒤(멀리)에서부터 앞(가까이) 순서로 그려야 겹쳐지는 순서가 자연스럽다
-    draw_parallax_layer(surface, camera_x, 0.05, draw_stars)      # 별: 거의 안 움직임
-    draw_parallax_layer(surface, camera_x, 0.25, draw_mountains)  # 산: 조금 움직임
-    draw_parallax_layer(surface, camera_x, 0.6, draw_hills)       # 언덕: 많이 움직임
+    # 뒤(멀리)에서부터 앞(가까이) 순서로 그려야 겹쳐지는 순서가 자연스럽다 (먼 것이 가려지면 안 됨)
+    draw_parallax_layer(surface, camera_x, 0.05, draw_stars)      # 별: 거의 안 움직임 (가장 멀리)
+    draw_parallax_layer(surface, camera_x, 0.25, draw_mountains)  # 산: 조금 움직임 (중간 거리)
+    draw_parallax_layer(surface, camera_x, 0.6, draw_hills)       # 언덕: 많이 움직임 (가장 가까이)
 
 
 camera_x = 0.0
@@ -1058,16 +1248,21 @@ class Ball:
         self.radius = BALL_RADIUS
 
     def update(self, dt):
+        # ---- 아래 물리 계산은 실습3의 physics_bounce_demo.py와 완전히 동일한 알고리즘이다 ----
+        # (① 중력 적용 ② 위치 이동 ③ 바닥 충돌 반사 ④ 좌우 벽 충돌 반사 ⑤ 공기 저항)
+        # 자세한 원리는 실습3 코드의 주석을 참고. 여기서는 ③④에서 &quot;세게 부딪혔을 때&quot;
+        # self._on_hard_impact()를 호출하는 부분이 새로 추가된 점이 핵심 차이다.
         self.vel.y += GRAVITY * dt
         self.pos += self.vel * dt
 
         floor_y = HEIGHT - self.radius
         if self.pos.y &gt; floor_y:
             self.pos.y = floor_y
-            impact_speed = abs(self.vel.y)
+            impact_speed = abs(self.vel.y)   # 부딪힌 순간의 속력 — 이 값을 이펙트 강도 계산에 사용한다
             if impact_speed &gt; MIN_BOUNCE_SPEED:
                 self.vel.y = -self.vel.y * RESTITUTION
                 bounce_sound.play()
+                # ---- [이번 시간 추가된 훅] 충돌 지점과 속력을 넘겨 연출을 트리거한다 ----
                 self._on_hard_impact(impact_speed, (self.pos.x, floor_y + self.radius))
             else:
                 self.vel.y = 0
@@ -1082,6 +1277,7 @@ class Ball:
         self.vel.x *= 0.999
 
     def _bounce_x(self):
+        # 좌우 벽 충돌 처리를 별도 메서드로 분리 (왼쪽/오른쪽 두 곳에서 똑같이 호출하기 위함)
         impact_speed = abs(self.vel.x)
         self.vel.x = -self.vel.x * RESTITUTION
         if impact_speed &gt; MIN_BOUNCE_SPEED:
@@ -1090,15 +1286,24 @@ class Ball:
 
     def _on_hard_impact(self, impact_speed, at_pos):
         &quot;&quot;&quot;일정 속도 이상으로 세게 부딪혔을 때만 &#x27;연출&#x27;(파티클 + 화면 흔들림)을 발생시킨다.&quot;&quot;&quot;
+        # ============================================================
+        # [핵심 알고리즘] 충돌 속도에 비례해 연출 강도를 다르게 준다
+        # ------------------------------------------------------------
         if impact_speed &lt; HARD_IMPACT_SPEED:
-            return
+            return   # 약한 충돌은 무시 — 모든 충돌마다 터뜨리면 화면이 지저분해진다
+
+        # 파티클 개수도 속도에 비례시켜, 세게 맞을수록 더 화려하게 터지도록 한다 (최대 30개로 제한)
         spawn_burst(at_pos, count=min(30, int(impact_speed / 15)))
-        # 충돌이 강할수록 화면도 더 크게 흔든다 (magnitude를 속도에 비례시킴)
+
+        # 화면 흔들림 세기도 속도에 비례시킨다 (최대 16px로 제한 — 너무 심하게 흔들리지 않도록)
         magnitude = min(16, impact_speed / 40)
         shake.trigger(duration=0.22, magnitude=magnitude)
+
         boom_sound.play()
+        # ============================================================
 
     def draw(self, surface, offset):
+        # 화면 흔들림 오프셋을 더해서 그려야 공도 배경과 함께 흔들린다
         rect = ball_img.get_rect(center=(self.pos.x + offset.x, self.pos.y + offset.y))
         surface.blit(ball_img, rect)
 
@@ -1111,8 +1316,8 @@ MAX_DRAG = 160
 MAX_LAUNCH_SPEED = 950
 
 # ---- 페이드 인 연출: 시작 시 검은 화면에서 서서히 게임 화면이 드러남 ----
-fade_alpha = 255
-fade_overlay = pygame.Surface((WIDTH, HEIGHT))
+fade_alpha = 255                                  # 시작할 때는 완전히 불투명(검은 화면)
+fade_overlay = pygame.Surface((WIDTH, HEIGHT))    # 화면 전체를 덮을 검은 오버레이 Surface
 fade_overlay.fill((0, 0, 0))
 
 running = True
@@ -1133,6 +1338,8 @@ while running:
             drag_start = pygame.Vector2(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONUP and dragging:
+            # ---- 아래 새총 발사 계산은 실습3과 완전히 동일한 알고리즘이다 ----
+            # (drag 벡터 → atan2로 각도 → cos/sin으로 속도 벡터. 자세한 설명은 실습3 참고)
             dragging = False
             drag_end = pygame.Vector2(event.pos)
             pull = drag_start - drag_end
@@ -1147,6 +1354,7 @@ while running:
                 launch_sound.play()
 
     # ---- 방향키로 가상 카메라 이동 (누르고 있는 동안 계속 이동) ----
+    # get_pressed()는 &quot;지금 이 순간 눌려 있는 모든 키&quot;를 알려준다 (KEYDOWN 이벤트와 달리 매 프레임 반복 감지 가능)
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
         camera_x -= CAMERA_SPEED * dt
@@ -1158,16 +1366,20 @@ while running:
 
     for p in particles:
         p.update(dt)
+    # 죽은(is_dead()가 True인) 파티클을 리스트에서 걸러낸다 — 그대로 두면 메모리가 계속 쌓인다
     particles[:] = [p for p in particles if not p.is_dead()]
 
     shake.update(dt)
-    offset = shake.get_offset()
+    offset = shake.get_offset()   # 이번 프레임에 적용할 흔들림 오프셋을 한 번만 계산해서 재사용
 
     # ---- 화면 그리기 ----
     screen.fill((16, 18, 30))
-    draw_background(screen, camera_x + offset.x)  # 화면 흔들림이 배경에도 함께 적용되도록 offset 반영
+    # 배경을 그릴 때도 흔들림 오프셋(offset.x)을 camera_x에 더해줘야, 세게 부딪혔을 때
+    # 공만 흔들리고 배경은 멀쩡한 어색한 상황을 피하고 화면 전체가 함께 떨리게 된다.
+    draw_background(screen, camera_x + offset.x)
 
     if dragging:
+        # 드래그 중 조준선 표시 (실습3과 동일한 계산)
         mouse_pos = pygame.Vector2(pygame.mouse.get_pos())
         pull = drag_start - mouse_pos
         distance = min(pull.length(), MAX_DRAG)
@@ -1185,11 +1397,16 @@ while running:
     hint = font.render(&quot;←/→: 배경 스크롤 · 드래그: 공 발사 · 세게 튕기면 파티클+흔들림 · R: 초기화&quot;, True, (200, 205, 220))
     screen.blit(hint, (16, HEIGHT - 34))
 
-    # ---- 페이드 인: 매 프레임 알파값을 줄여가며 오버레이를 그린다 ----
+    # ============================================================
+    # [핵심 알고리즘] 페이드 인 — 오버레이의 투명도를 서서히 낮추기
+    # ------------------------------------------------------------
     if fade_alpha &gt; 0:
-        fade_alpha = max(0, fade_alpha - 400 * dt)  # 초당 400씩 감소 (약 0.6초에 완료)
-        fade_overlay.set_alpha(int(fade_alpha))
+        fade_alpha = max(0, fade_alpha - 400 * dt)   # 초당 400씩 감소 → 255/400 ≈ 0.64초 만에 완전히 사라짐
+        fade_overlay.set_alpha(int(fade_alpha))        # Surface 전체의 불투명도를 0~255로 설정
+        # 반드시 다른 모든 것(배경·공·파티클·안내문)을 다 그린 &quot;이후&quot;에 blit해야
+        # 검은 오버레이가 화면 전체를 자연스럽게 덮을 수 있다
         screen.blit(fade_overlay, (0, 0))
+    # ============================================================
 
     pygame.display.flip()
 
