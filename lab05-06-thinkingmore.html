@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실습 6 · 생각해보기 예시 답안 | 대구과학고등학교</title>
+<style>
+:root{
+  --bg:#f6f7fb;
+  --surface:#ffffff;
+  --text:#1f2430;
+  --muted:#6b7280;
+  --primary:#2f6fed;
+  --primary-dark:#1f4fc4;
+  --accent:#f2a900;
+  --good:#1f9d63;
+  --border:#e6e8f0;
+  --code-bg:#1c2130;
+  --code-text:#e6e9f2;
+  --code-muted:#8b92a8;
+  --radius:12px;
+  --shadow:0 2px 10px rgba(20,30,60,0.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Pretendard","Noto Sans KR","Malgun Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  line-height:1.7;
+}
+a{color:var(--primary);}
+img{max-width:100%;}
+code{
+  background:#eef1f8;color:#3350b0;padding:1px 6px;border-radius:5px;
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:0.92em;
+}
+/* 코드블록(pre) 안의 code는 인라인 코드용 밝은 배경/패딩을 걷어내고
+   문법 강조 색만 살아있도록 리셋한다.
+   (이 리셋이 없으면 여러 줄 code 안 배경이 줄마다 흰 박스로 보이는 문제가 생긴다) */
+pre code{
+  background:none;color:inherit;padding:0;border-radius:0;font-size:inherit;
+}
+
+/* ---------- 헤더 ---------- */
+header.top{
+  background:linear-gradient(135deg,#173d8f 0%,#2f6fed 60%,#3f8ff0 100%);
+  color:#fff;
+  padding:28px 32px;
+  display:flex;
+  align-items:center;
+  gap:22px;
+  box-shadow:var(--shadow);
+}
+header.top .logo{
+  width:74px;height:74px;border-radius:50%;
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  flex-shrink:0;
+  box-shadow:0 0 0 3px rgba(255,255,255,0.35);
+}
+header.top .logo img{width:100%;height:100%;object-fit:contain;}
+header.top .title-wrap .eyebrow{
+  font-size:13px;letter-spacing:1px;opacity:0.85;font-weight:600;
+  text-transform:uppercase;
+}
+header.top .title-wrap h1{
+  margin:4px 0 6px;font-size:26px;font-weight:800;
+}
+header.top .title-wrap .desc{font-size:14px;opacity:0.92;}
+
+/* ---------- 레이아웃 ---------- */
+.layout{display:flex;align-items:flex-start;}
+nav.sidebar{
+  position:sticky;top:0;
+  width:270px;flex-shrink:0;
+  height:100vh;overflow-y:auto;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  padding:22px 16px 60px;
+}
+nav.sidebar h2{
+  font-size:12px;color:var(--muted);text-transform:uppercase;
+  letter-spacing:0.6px;margin:22px 10px 8px;font-weight:700;
+}
+nav.sidebar h2:first-child{margin-top:6px;}
+nav.sidebar ul{list-style:none;margin:0;padding:0;}
+nav.sidebar li{margin:2px 0;}
+nav.sidebar a.nav-link{
+  display:block;padding:8px 10px;border-radius:8px;
+  font-size:13.5px;color:var(--text);text-decoration:none;
+  border-left:3px solid transparent;
+}
+nav.sidebar a.nav-link:hover{background:#f0f3fb;}
+nav.sidebar a.nav-link.active{
+  background:#eaf1ff;color:var(--primary-dark);font-weight:700;
+  border-left:3px solid var(--primary);
+}
+
+main{flex:1;min-width:0;padding:40px 48px 90px;max-width:980px;}
+main section{margin-bottom:56px;scroll-margin-top:20px;}
+main h2{
+  font-size:22px;font-weight:800;margin:0 0 16px;
+  display:flex;align-items:center;gap:10px;
+}
+main h2 .num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:8px;
+  background:var(--primary);color:#fff;font-size:14px;font-weight:800;
+  flex-shrink:0;
+}
+main h3{font-size:17.5px;font-weight:800;margin:28px 0 12px;color:var(--primary-dark);}
+main p{margin:10px 0;font-size:15px;}
+main ul, main ol{font-size:15px;padding-left:22px;}
+main li{margin:5px 0;}
+
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px 24px;box-shadow:var(--shadow);margin:16px 0;
+}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start;}
+@media (max-width:900px){.two-col{grid-template-columns:1fr;}}
+
+.info-box{
+  background:#eef4ff;border:1px solid #cfe0ff;border-left:4px solid var(--primary);
+  border-radius:10px;padding:14px 18px;margin:16px 0;font-size:14px;
+}
+.info-box b{color:var(--primary-dark);}
+.warn-box{
+  background:#fff6e8;border:1px solid #ffe0a3;border-left:4px solid var(--accent);
+  border-radius:10px;padding:14px 18px;margin:16px 0;font-size:14px;
+}
+.warn-box b{color:#a3600a;}
+.good-box{
+  background:#eafaf1;border:1px solid #b9ecd0;border-left:4px solid var(--good);
+  border-radius:10px;padding:14px 18px;margin:16px 0;font-size:14px;
+}
+.good-box b{color:#137a48;}
+
+.api-box{
+  border:1px solid var(--border);border-radius:10px;overflow:hidden;margin:16px 0;
+}
+.api-box .api-head{
+  background:#12172a;color:#e6e9f2;padding:10px 18px;
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:13.5px;font-weight:700;
+}
+.api-box .api-body{padding:14px 18px;}
+.api-row{display:flex;gap:10px;margin:8px 0;font-size:14px;align-items:flex-start;}
+.api-row .label{flex-shrink:0;width:78px;font-weight:700;color:var(--primary-dark);}
+.api-row .value{color:#374151;}
+.api-row.caution .label{color:#b3410b;}
+
+.code-wrapper{position:relative;margin:16px 0;}
+.code-wrapper .filename{
+  background:#12172a;color:var(--code-muted);
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;
+  font-size:12.5px;padding:8px 16px;border-radius:10px 10px 0 0;
+  border-bottom:1px solid #2a3350;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.code-wrapper pre{
+  margin:0;background:var(--code-bg);color:var(--code-text);
+  padding:18px;overflow-x:auto;border-radius:0 0 10px 10px;
+  font-size:13.5px;font-family:"SFMono-Regular",Consolas,Menlo,monospace;
+  line-height:1.6;
+}
+.code-wrapper.no-filename pre{border-radius:10px;}
+.copy-btn{
+  position:absolute;top:8px;right:10px;
+  background:#2a3350;color:#e6e9f2;border:none;
+  padding:5px 12px;border-radius:6px;font-size:12px;cursor:pointer;
+  font-family:inherit;
+}
+.code-wrapper.no-filename .copy-btn{top:8px;}
+.copy-btn:hover{background:#38416a;}
+.copy-btn.copied{background:var(--good);}
+
+.tok-kw{color:#8FB2FF;}
+.tok-fn{color:#7DD9C4;}
+.tok-str{color:#9BE39B;}
+.tok-com{color:#7C8CAE;font-style:italic;}
+.tok-num{color:#F2C078;}
+
+.asset-grid{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+  gap:14px;margin:16px 0;
+}
+.asset-card{
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;text-align:center;background:var(--surface);
+}
+.asset-card img{max-height:110px;object-fit:contain;margin-bottom:8px;image-rendering:pixelated;}
+.asset-card .aname{font-weight:700;font-size:13.5px;margin-bottom:4px;}
+.asset-card .adesc{font-size:12px;color:var(--muted);margin-bottom:10px;min-height:32px;}
+.btn{
+  display:inline-block;background:var(--primary);color:#fff!important;
+  text-decoration:none;padding:8px 14px;border-radius:8px;font-size:13px;
+  font-weight:600;border:none;cursor:pointer;
+}
+.btn:hover{background:var(--primary-dark);}
+.btn.big{padding:14px 26px;font-size:15px;border-radius:10px;}
+.btn.ghost{background:#eef2ff;color:var(--primary-dark)!important;}
+audio{width:100%;margin-top:6px;height:32px;}
+
+.folder-tree{
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:13px;
+  background:#0f1830;color:#cfd8ff;padding:16px 20px;border-radius:10px;
+  line-height:1.9;white-space:pre;overflow-x:auto;
+}
+
+table.simple{border-collapse:collapse;width:100%;font-size:14px;margin:14px 0;}
+table.simple th, table.simple td{
+  border:1px solid var(--border);padding:8px 12px;text-align:left;vertical-align:top;
+}
+table.simple th{background:#f2f4fa;}
+
+.exercise-badge{
+  display:inline-block;background:#eaf1ff;color:var(--primary-dark);
+  font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;
+  margin-bottom:8px;
+}
+
+.challenge-list{padding-left:0;list-style:none;}
+.challenge-list li{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:12px 16px;margin:10px 0;font-size:14.5px;
+}
+.challenge-list li b{color:var(--primary-dark);}
+
+.flow-diagram{
+  background:#0f1830;border-radius:12px;padding:22px 18px;margin:16px 0;
+  font-family:"SFMono-Regular",Consolas,Menlo,monospace;font-size:12.5px;color:#cfd8ff;
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;
+}
+.flow-diagram .node{
+  background:#1c2745;border:1px solid #33417a;border-radius:8px;
+  padding:10px 16px;color:#e6e9f2;font-weight:700;text-align:center;
+}
+.flow-diagram .node.state{background:#20304f;border-color:#3d5aa8;}
+.flow-diagram .arrow{color:#7C8CAE;font-size:16px;}
+
+footer.page-footer{
+  text-align:center;color:var(--muted);font-size:12.5px;
+  padding:30px 20px 50px;border-top:1px solid var(--border);
+}
+
+@media (max-width:900px){
+  nav.sidebar{display:none;}
+  main{padding:24px;}
+  .flow-diagram{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="logo"><img src="data:image/jpeg;base64,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" alt="대구과학고등학교 CI"></div>
+  <div class="title-wrap">
+    <div class="eyebrow">실습 6 · FSM과 씬 관리</div>
+    <h1>생각해보기 예시 답안</h1>
+    <div class="desc">제작자: 대구과학고등학교 교사 이준구</div>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="sidebar" id="sidebar">
+  <h2>안내</h2>
+  <ul>
+    <li><a href="#about" class="nav-link">이 문서에 대하여</a></li>
+  </ul>
+  <h2>예시 답안</h2>
+  <ul>
+    <li><a href="#q1" class="nav-link">1. 일시정지 중 배경음악</a></li>
+    <li><a href="#q2" class="nav-link">2. 씬이 하나 더 필요하다면</a></li>
+    <li><a href="#q3" class="nav-link">3. 정규화하지 않으면</a></li>
+    <li><a href="#q4" class="nav-link">4. 저장 데이터 늘려보기</a></li>
+  </ul>
+</nav>
+
+<main>
+
+<section id="about">
+  <h2><span class="num">0</span>이 문서에 대하여</h2>
+  <p>실습 6 매뉴얼의 &ldquo;생각해보기&rdquo; 4문항에 대한 예시 답안입니다. 정답이 하나만 있는 문제는 아니지만, 여기 실린 코드는 실제로 <code>fsm_scene_demo.py</code>에 적용해 동작을 검증한 버전입니다. 먼저 스스로 답을 만들어본 뒤 비교해보는 것을 권장합니다.</p>
+</section>
+
+<section id="q1">
+  <h2><span class="num">1</span>일시정지 중 배경음악은?</h2>
+  <div class="card" style="background:var(--code-bg);">
+    <p style="color:var(--code-text);margin:0;font-size:14px;"><b style="color:#F2C078;">질문</b> 지금 코드는 효과음만 다루지만, 배경음악이 있다면 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">PausedScene</code>에 진입할 때 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">pygame.mixer.music.pause()</code>를, 재개할 때 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">unpause()</code>를 호출하면 됩니다. 어느 메서드(<code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">__init__</code>, <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">handle_event</code>) 안에 넣어야 정확히 한 번씩만 호출될지 생각해보세요.</p>
+  </div>
+
+  <p><b>정답: <code>pause()</code>는 <code>__init__</code>에, <code>unpause()</code>는 <code>handle_event</code>의 복귀 분기에</b> 넣습니다.</p>
+  <p><code>__init__</code>은 <code>PausedScene(self)</code>로 새 인스턴스를 만드는 바로 그 순간, 즉 <b>이 씬에 진입하는 순간 딱 한 번만</b> 실행됩니다. 반면 <code>update()</code>는 이 씬이 살아있는 동안 매 프레임 반복 호출되므로, 거기에 <code>pause()</code>를 넣으면 일시정지 상태를 유지하는 내내 초당 60번씩 불필요하게 호출됩니다.</p>
+
+  <div class="code-wrapper">
+    <div class="filename"><span>fsm_scene_demo.py &mdash; PausedScene</span><button class="copy-btn">복사</button></div>
+    <pre><code><span class="tok-kw">class</span> <span class="tok-fn">PausedScene</span>(Scene):
+    <span class="tok-str">"""PlayScene 위에 반투명 오버레이만 얹어서 그리는 씬.
+
+    새로 화면을 처음부터 그리지 않고, 얼려둔(freeze) 이전 씬(underlying)을
+    먼저 그린 뒤 그 위에 반투명 사각형과 안내 문구만 겹쳐 그린다.
+    """</span>
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self, underlying: PlayScene):
+        self.underlying = underlying
+        pygame.mixer.music.<span class="tok-fn">pause</span>()  <span class="tok-com"># 이 씬에 "진입"하는 순간 정확히 1번 호출된다</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">handle_event</span>(self, event):
+        <span class="tok-kw">if</span> event.<span class="tok-kw">type</span> == pygame.KEYDOWN <span class="tok-kw">and</span> event.scancode == pygame.KSCAN_P:
+            snd_pause.<span class="tok-fn">play</span>()
+            pygame.mixer.music.<span class="tok-fn">unpause</span>()  <span class="tok-com"># 이 씬을 "떠나는" 순간 정확히 1번 호출된다</span>
+            self.manager.<span class="tok-fn">go_to</span>(self.underlying)  <span class="tok-com"># 얼려뒀던 PlayScene으로 그대로 복귀</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">update</span>(self, dt):
+        <span class="tok-kw">pass</span>  <span class="tok-com"># 일시정지 중에는 아무 것도 갱신하지 않는다 (dt를 흘려보내지 않음)</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">draw</span>(self, surface):
+        self.underlying.<span class="tok-fn">draw</span>(surface)  <span class="tok-com"># 뒤에 멈춰있는 게임 화면을 그대로 보여주고</span>
+
+        overlay = pygame.<span class="tok-fn">Surface</span>((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.<span class="tok-fn">fill</span>((<span class="tok-num">10</span>, <span class="tok-num">12</span>, <span class="tok-num">20</span>, <span class="tok-num">170</span>))  <span class="tok-com"># 알파값 170으로 반투명 어둡게</span>
+        surface.<span class="tok-fn">blit</span>(overlay, (<span class="tok-num">0</span>, <span class="tok-num">0</span>))
+
+        text = FONT_BIG.<span class="tok-fn">render</span>(<span class="tok-str">"일시정지"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">255</span>, <span class="tok-num">255</span>, <span class="tok-num">255</span>))
+        surface.<span class="tok-fn">blit</span>(text, text.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> - <span class="tok-num">20</span>)))
+        hint = FONT.<span class="tok-fn">render</span>(<span class="tok-str">"P 를 눌러 계속하기"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">210</span>, <span class="tok-num">214</span>, <span class="tok-num">226</span>))
+        surface.<span class="tok-fn">blit</span>(hint, hint.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> + <span class="tok-num">30</span>)))
+</code></pre>
+  </div>
+
+  <div class="info-box">
+    <b>왜 "정확히 한 번"이 중요한가요?</b> <code>pygame.mixer.music.pause()</code>를 여러 번 연달아 호출해도 에러는 나지 않지만, 만약 나중에 "재생 위치를 기록했다가 되돌리기" 같은 더 정교한 로직을 추가한다면 "몇 번 호출됐는지"가 상태를 어긋나게 만들 수 있습니다. <code>__init__</code>과 &ldquo;전이가 실제로 일어나는 그 줄&rdquo;에 정확히 짝을 맞춰 넣는 습관은, 지금 당장 문제가 없어도 이후 확장에서 버그를 막아줍니다.
+  </div>
+
+  <div class="good-box">
+    <b>검증</b> 이 코드를 실제로 <code>PausedScene</code> 진입 4회, 복귀 4회를 반복시켜본 결과 <code>pause()</code> 4회 / <code>unpause()</code> 4회로 정확히 1:1 대응했습니다. 복귀 시 <code>pause()</code>가 추가로 불리지 않는 것도 함께 확인했습니다.
+  </div>
+</section>
+
+<section id="q2">
+  <h2><span class="num">2</span>씬이 하나 더 필요하다면?</h2>
+  <div class="card" style="background:var(--code-bg);">
+    <p style="color:var(--code-text);margin:0;font-size:14px;"><b style="color:#F2C078;">질문</b> "일시정지 중 정말 종료할지 확인하는 팝업"을 추가하려면 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">Scene</code>을 상속하는 클래스를 어떻게 설계하고, 어떤 씬에서 어떤 씬으로 전이되도록 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">go_to()</code>를 연결해야 할지 화살표 다이어그램으로 그려보세요.</p>
+  </div>
+
+  <p><code>ConfirmQuitScene</code>이라는 새 씬을 추가합니다. <code>PausedScene</code>에서 <b>ESC</b>를 누르면 이 씬으로 전이하고, 여기서 <b>Y</b>를 누르면 프로그램을 종료하고 <b>N</b>(또는 ESC)을 누르면 다시 <code>PausedScene</code>으로 돌아갑니다.</p>
+
+  <div class="card">
+<svg viewBox="0 0 900 470" xmlns="http://www.w3.org/2000/svg" font-family="Pretendard, Noto Sans KR, sans-serif">
+  <defs>
+    <marker id="ar" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#6b7280"/>
+    </marker>
+    <marker id="arG" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#1f9d63"/>
+    </marker>
+    <marker id="arR" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#d1495b"/>
+    </marker>
+    <marker id="arGold" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#a3600a"/>
+    </marker>
+    <marker id="arBlue" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" refX="9" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 Z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- 상단 큰 루프 두 개 먼저 그려서 노드 뒤로 깔리게 -->
+  <path d="M 645 90 L 645 55 L 365 55 L 365 84" fill="none" stroke="#22c55e" stroke-width="2" marker-end="url(#arG)"/>
+  <text x="505" y="49" font-size="11.5" fill="#137a48" text-anchor="middle">R (재도전)</text>
+
+  <path d="M 620 90 L 620 20 L 105 20 L 105 84" fill="none" stroke="#2563eb" stroke-width="2" marker-end="url(#arBlue)"/>
+  <text x="362" y="15" font-size="11.5" fill="#2563eb" text-anchor="middle">ESC (타이틀로)</text>
+
+  <!-- 노드들 -->
+  <rect x="30" y="90" width="150" height="50" rx="8" fill="#1c2130" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="105" y="120" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">TitleScene</text>
+
+  <rect x="290" y="90" width="150" height="50" rx="8" fill="#1c2130" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="365" y="120" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">PlayScene</text>
+
+  <rect x="560" y="90" width="170" height="50" rx="8" fill="#1c2130" stroke="#d1495b" stroke-width="1.5"/>
+  <text x="645" y="120" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">GameOverScene</text>
+
+  <rect x="290" y="210" width="150" height="50" rx="8" fill="#1c2130" stroke="#f2a900" stroke-width="1.5"/>
+  <text x="365" y="240" font-size="14" fill="#fff" text-anchor="middle" font-weight="700">PausedScene</text>
+
+  <rect x="270" y="330" width="190" height="50" rx="8" fill="#2a1620" stroke="#d1495b" stroke-width="2"/>
+  <text x="365" y="355" font-size="13.5" fill="#fff" text-anchor="middle" font-weight="700">ConfirmQuitScene</text>
+  <text x="365" y="371" font-size="10.5" fill="#f0a8b4" text-anchor="middle">(신규 추가)</text>
+
+  <rect x="270" y="430" width="190" height="42" rx="8" fill="none" stroke="#9aa2b8" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text x="365" y="456" font-size="13" fill="#6b7280" text-anchor="middle">프로그램 종료</text>
+
+  <!-- 화살표: Title -> Play -->
+  <line x1="180" y1="115" x2="284" y2="115" stroke="#6b7280" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="232" y="106" font-size="11.5" fill="#6b7280" text-anchor="middle">SPACE</text>
+
+  <!-- 화살표: Play -> GameOver -->
+  <line x1="440" y1="115" x2="554" y2="115" stroke="#6b7280" stroke-width="2" marker-end="url(#ar)"/>
+  <text x="497" y="106" font-size="11.5" fill="#6b7280" text-anchor="middle">시간 종료</text>
+
+  <!-- 화살표: Play -> Paused -->
+  <line x1="345" y1="140" x2="345" y2="204" stroke="#f2a900" stroke-width="2" marker-end="url(#arGold)"/>
+  <text x="300" y="175" font-size="11.5" fill="#a3600a" text-anchor="middle">P</text>
+
+  <!-- 화살표: Paused -> Play -->
+  <line x1="385" y1="204" x2="385" y2="140" stroke="#22c55e" stroke-width="2" marker-end="url(#arG)"/>
+  <text x="430" y="175" font-size="11.5" fill="#137a48" text-anchor="middle">P (재개)</text>
+
+  <!-- 화살표: Paused -> ConfirmQuit -->
+  <line x1="345" y1="260" x2="345" y2="324" stroke="#d1495b" stroke-width="2" marker-end="url(#arR)"/>
+  <text x="300" y="295" font-size="11.5" fill="#d1495b" text-anchor="middle">ESC</text>
+
+  <!-- 화살표: ConfirmQuit -> Paused -->
+  <line x1="400" y1="324" x2="400" y2="260" stroke="#22c55e" stroke-width="2" marker-end="url(#arG)"/>
+  <text x="447" y="295" font-size="11.5" fill="#137a48" text-anchor="middle">N / ESC</text>
+
+  <!-- 화살표: ConfirmQuit -> 종료 -->
+  <line x1="365" y1="380" x2="365" y2="424" stroke="#d1495b" stroke-width="2" marker-end="url(#arR)"/>
+  <text x="390" y="405" font-size="11.5" fill="#d1495b">Y</text>
+</svg>
+  </div>
+
+  <p>핵심 설계 포인트는 <b><code>ConfirmQuitScene</code>도 취소를 대비해 <code>underlying</code>(원래의 <code>PlayScene</code>)을 계속 들고 다녀야 한다</b>는 것입니다. <code>PausedScene</code>에서 넘겨받은 <code>self.underlying</code>을 그대로 다음 씬에 다시 넘겨줘야, 취소했을 때 "얼려둔 게임 화면"을 잃어버리지 않고 <code>PausedScene(self.underlying)</code>으로 복귀할 수 있습니다.</p>
+
+  <div class="code-wrapper">
+    <div class="filename"><span>fsm_scene_demo.py &mdash; PausedScene 수정 + ConfirmQuitScene 신규</span><button class="copy-btn">복사</button></div>
+    <pre><code><span class="tok-kw">class</span> <span class="tok-fn">PausedScene</span>(Scene):
+    <span class="tok-str">"""PlayScene 위에 반투명 오버레이만 얹어서 그리는 씬.
+
+    새로 화면을 처음부터 그리지 않고, 얼려둔(freeze) 이전 씬(underlying)을
+    먼저 그린 뒤 그 위에 반투명 사각형과 안내 문구만 겹쳐 그린다.
+    """</span>
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self, underlying: PlayScene):
+        self.underlying = underlying
+
+    <span class="tok-kw">def</span> <span class="tok-fn">handle_event</span>(self, event):
+        <span class="tok-kw">if</span> event.<span class="tok-kw">type</span> == pygame.KEYDOWN:
+            <span class="tok-kw">if</span> event.scancode == pygame.KSCAN_P:
+                snd_pause.<span class="tok-fn">play</span>()
+                self.manager.<span class="tok-fn">go_to</span>(self.underlying)  <span class="tok-com"># 얼려뒀던 PlayScene으로 그대로 복귀</span>
+            <span class="tok-kw">elif</span> event.key == pygame.K_ESCAPE:
+                snd_pause.<span class="tok-fn">play</span>()
+                <span class="tok-com"># "정말 종료?" 팝업으로 전이. underlying(PlayScene)을 그대로 들고 가서</span>
+                <span class="tok-com"># 취소했을 때 다시 PausedScene(self.underlying)으로 돌아올 수 있게 한다.</span>
+                self.manager.<span class="tok-fn">go_to</span>(<span class="tok-fn">ConfirmQuitScene</span>(self.underlying))
+
+    <span class="tok-kw">def</span> <span class="tok-fn">update</span>(self, dt):
+        <span class="tok-kw">pass</span>  <span class="tok-com"># 일시정지 중에는 아무 것도 갱신하지 않는다 (dt를 흘려보내지 않음)</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">draw</span>(self, surface):
+        self.underlying.<span class="tok-fn">draw</span>(surface)  <span class="tok-com"># 뒤에 멈춰있는 게임 화면을 그대로 보여주고</span>
+
+        overlay = pygame.<span class="tok-fn">Surface</span>((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.<span class="tok-fn">fill</span>((<span class="tok-num">10</span>, <span class="tok-num">12</span>, <span class="tok-num">20</span>, <span class="tok-num">170</span>))  <span class="tok-com"># 알파값 170으로 반투명 어둡게</span>
+        surface.<span class="tok-fn">blit</span>(overlay, (<span class="tok-num">0</span>, <span class="tok-num">0</span>))
+
+        text = FONT_BIG.<span class="tok-fn">render</span>(<span class="tok-str">"일시정지"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">255</span>, <span class="tok-num">255</span>, <span class="tok-num">255</span>))
+        surface.<span class="tok-fn">blit</span>(text, text.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> - <span class="tok-num">20</span>)))
+        hint = FONT.<span class="tok-fn">render</span>(<span class="tok-str">"P 를 눌러 계속하기 / ESC 를 눌러 종료"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">210</span>, <span class="tok-num">214</span>, <span class="tok-num">226</span>))
+        surface.<span class="tok-fn">blit</span>(hint, hint.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> + <span class="tok-num">30</span>)))
+
+
+<span class="tok-kw">class</span> <span class="tok-fn">ConfirmQuitScene</span>(Scene):
+    <span class="tok-str">"""PausedScene 위에 한 겹 더 얹는 "정말 종료?" 확인 팝업.
+
+    이 씬 자체는 아무 게임 상태도 갖지 않는다 - 오직 "예/아니오"를
+    판정해서 둘 중 하나로 전이시키는 역할만 한다.
+    """</span>
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self, underlying: PlayScene):
+        self.underlying = underlying  <span class="tok-com"># 취소 시 되돌아갈 PlayScene</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">handle_event</span>(self, event):
+        <span class="tok-kw">if</span> event.<span class="tok-kw">type</span> == pygame.KEYDOWN:
+            <span class="tok-kw">if</span> event.key == pygame.K_y:
+                <span class="tok-com"># 메인 루프가 이미 처리하고 있는 QUIT 이벤트를 그대로 재사용한다.</span>
+                <span class="tok-com"># ConfirmQuitScene이 "게임을 어떻게 끝내는지"를 직접 알 필요가 없다.</span>
+                pygame.event.<span class="tok-fn">post</span>(pygame.event.<span class="tok-fn">Event</span>(pygame.QUIT))
+            <span class="tok-kw">elif</span> event.key == pygame.K_n <span class="tok-kw">or</span> event.key == pygame.K_ESCAPE:
+                snd_pause.<span class="tok-fn">play</span>()
+                self.manager.<span class="tok-fn">go_to</span>(<span class="tok-fn">PausedScene</span>(self.underlying))  <span class="tok-com"># 취소 -&gt; 다시 일시정지 화면으로</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">draw</span>(self, surface):
+        self.underlying.<span class="tok-fn">draw</span>(surface)
+        overlay = pygame.<span class="tok-fn">Surface</span>((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.<span class="tok-fn">fill</span>((<span class="tok-num">10</span>, <span class="tok-num">12</span>, <span class="tok-num">20</span>, <span class="tok-num">200</span>))
+        surface.<span class="tok-fn">blit</span>(overlay, (<span class="tok-num">0</span>, <span class="tok-num">0</span>))
+
+        text = FONT.<span class="tok-fn">render</span>(<span class="tok-str">"정말 게임을 종료할까요?"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">255</span>, <span class="tok-num">255</span>, <span class="tok-num">255</span>))
+        surface.<span class="tok-fn">blit</span>(text, text.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> - <span class="tok-num">20</span>)))
+        hint = FONT_SMALL.<span class="tok-fn">render</span>(<span class="tok-str">"Y: 종료   /   N(또는 ESC): 취소"</span>, <span class="tok-kw">True</span>, (<span class="tok-num">210</span>, <span class="tok-num">214</span>, <span class="tok-num">226</span>))
+        surface.<span class="tok-fn">blit</span>(hint, hint.<span class="tok-fn">get_rect</span>(center=(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span> + <span class="tok-num">20</span>)))
+</code></pre>
+  </div>
+
+  <div class="info-box">
+    <b>Y를 누르면 프로그램을 어떻게 끄나요?</b> <code>ConfirmQuitScene</code>이 <code>pygame.quit()</code>이나 <code>sys.exit()</code>을 직접 호출할 수도 있지만, 그러면 메인 루프의 <code>running = False</code> 흐름과 별개의 종료 경로가 하나 더 생겨버립니다. 대신 <code>pygame.event.post(pygame.event.Event(pygame.QUIT))</code>로 <b>메인 루프가 이미 처리하고 있는 QUIT 이벤트를 그대로 큐에 올려줍니다</b>. 다음 프레임에 메인 루프의 <code>for event in pygame.event.get():</code>가 이 QUIT을 집어서 <code>running = False</code>로 정상 종료합니다. 씬은 "종료해야 한다"는 사실만 알리고, "어떻게 종료할지"는 메인 루프에게 맡기는 책임 분리입니다.
+  </div>
+
+  <div class="good-box">
+    <b>검증</b> 실제로 PlayScene &rarr; P(일시정지) &rarr; ESC(확인) &rarr; N(취소, 다시 일시정지) &rarr; ESC(확인) &rarr; Y 순서로 입력을 흘려본 결과, 전이가 설계한 그대로 일어났고 Y를 눌렀을 때 QUIT 이벤트가 정상적으로 큐에 올라가는 것까지 확인했습니다.
+  </div>
+</section>
+
+
+<section id="q3">
+  <h2><span class="num">3</span>대각선 이동을 정규화하지 않으면?</h2>
+  <div class="card" style="background:var(--code-bg);">
+    <p style="color:var(--code-text);margin:0;font-size:14px;"><b style="color:#F2C078;">질문</b> 실습 5의 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">normalize()</code> 호출을 주석 처리하고 실행해보세요. 대각선으로 이동할 때와 가로로만 이동할 때의 체감 속도 차이를 직접 확인해보고, 왜 그런 차이가 생기는지 벡터의 길이 공식으로 설명해보세요.</p>
+  </div>
+
+  <p><code>normalize()</code>를 주석 처리하면 <b>대각선 이동이 가로·세로 이동보다 41% 더 빨라집니다.</b> 방향키 하나만 누르면 <code>move</code>는 <code>(1, 0)</code>처럼 성분이 하나뿐이라 길이가 원래 1이지만, 두 방향키를 동시에 누르면 <code>move</code>가 <code>(1, 1)</code>이 되고 이 벡터의 실제 길이는 1이 아닙니다.</p>
+
+  <div class="api-box">
+    <div class="api-head">벡터의 길이 공식</div>
+    <div class="api-body">
+      <div class="api-row"><div class="label">가로/세로 이동</div><div class="value"><code>move = (1, 0)</code> &rarr; 길이 = &radic;(1&sup2;+0&sup2;) = <b>1</b></div></div>
+      <div class="api-row"><div class="label">대각선 이동</div><div class="value"><code>move = (1, 1)</code> &rarr; 길이 = &radic;(1&sup2;+1&sup2;) = &radic;2 &asymp; <b>1.41</b></div></div>
+    </div>
+  </div>
+
+  <p><code>self.player_pos += move * self.speed * dt</code>에서 <code>move</code>의 길이가 그대로 배속으로 곱해지기 때문에, 정규화 없이 대각선으로 이동하면 매 프레임 실제로 <code>speed &times; 1.41 &times; dt</code>만큼 이동합니다. <code>move.normalize()</code>는 방향은 그대로 두고 길이만 강제로 1로 맞춰서, 어느 방향으로 이동하든 항상 같은 <code>speed</code>가 적용되도록 보정하는 역할을 합니다.</p>
+
+  <div class="code-wrapper">
+    <div class="filename"><span>fsm_scene_demo.py &mdash; PlayScene.update() 일부</span><button class="copy-btn">복사</button></div>
+    <pre><code>move = pygame.<span class="tok-fn">Vector2</span>(<span class="tok-num">0</span>, <span class="tok-num">0</span>)
+<span class="tok-kw">if</span> keys[pygame.K_LEFT] <span class="tok-kw">or</span> keys[pygame.K_a]:
+    move.x -= <span class="tok-num">1</span>
+<span class="tok-kw">if</span> keys[pygame.K_RIGHT] <span class="tok-kw">or</span> keys[pygame.K_d]:
+    move.x += <span class="tok-num">1</span>
+<span class="tok-kw">if</span> keys[pygame.K_UP] <span class="tok-kw">or</span> keys[pygame.K_w]:
+    move.y -= <span class="tok-num">1</span>
+<span class="tok-kw">if</span> keys[pygame.K_DOWN] <span class="tok-kw">or</span> keys[pygame.K_s]:
+    move.y += <span class="tok-num">1</span>
+
+<span class="tok-com"># --- 아래 줄을 주석 처리하고 실행해서 비교해보세요 ---</span>
+<span class="tok-kw">if</span> move.<span class="tok-fn">length_squared</span>() &gt; <span class="tok-num">0</span>:
+    move = move.<span class="tok-fn">normalize</span>()
+
+self.player_pos += move * self.speed * dt</code></pre>
+  </div>
+
+  <div class="warn-box">
+    <b>실습 5와 같은 원리입니다.</b> 이 문제는 사실 새로운 내용이 아니라, 실습 5 &ldquo;스프라이트시트와 델타타임&rdquo;에서 이미 다룬 정규화 개념을 실습 6의 자유 이동(상하좌우 8방향)에 그대로 적용해본 것뿐입니다. 델타타임이 "언제(시간)"의 일관성을 보장한다면, 정규화는 "어느 방향으로 가든 속력은 같아야 한다"는 "방향과 무관한 일관성"을 보장합니다.
+  </div>
+</section>
+
+<section id="q4">
+  <h2><span class="num">4</span>저장 데이터를 늘려본다면?</h2>
+  <div class="card" style="background:var(--code-bg);">
+    <p style="color:var(--code-text);margin:0;font-size:14px;"><b style="color:#F2C078;">질문</b> <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">save_data</code> 딕셔너리에 <code style="color:#9BE39B;background:rgba(155,227,155,0.12);padding:1px 5px;border-radius:4px;">"play_count"</code>(플레이 횟수)를 추가해 게임을 시작할 때마다 1씩 증가시키고 저장해보세요. 어느 씬의 어느 시점에서 값을 증가시키고 저장해야 정확한 횟수가 기록될까요?</p>
+  </div>
+
+  <p><b>정답: <code>PlayScene.__init__</code>의 맨 앞</b>에서 증가시키고 곧바로 저장합니다. <code>TitleScene</code>에서 SPACE를 눌렀을 때도, <code>GameOverScene</code>에서 R로 재도전할 때도 &mdash; &ldquo;플레이가 새로 시작되는&rdquo; 모든 경로가 결국 <b>새 <code>PlayScene</code> 인스턴스를 만드는 것</b>으로 합쳐지기 때문입니다. 두 갈래 경로 각각에 카운트 증가 코드를 따로 넣을 필요 없이, 그 두 경로가 만나는 지점 한 곳에만 넣으면 됩니다.</p>
+
+  <div class="code-wrapper">
+    <div class="filename"><span>fsm_scene_demo.py &mdash; load_save_data() + PlayScene.__init__</span><button class="copy-btn">복사</button></div>
+    <pre><code><span class="tok-kw">def</span> <span class="tok-fn">load_save_data</span>():
+    <span class="tok-str">"""저장 파일이 없거나 손상되었을 때도 게임이 죽지 않도록 항상 안전한 기본값을 반환한다."""</span>
+    <span class="tok-kw">if</span> <span class="tok-kw">not</span> os.path.<span class="tok-fn">exists</span>(SAVE_PATH):
+        <span class="tok-kw">return</span> {<span class="tok-str">"high_score"</span>: <span class="tok-num">0</span>, <span class="tok-str">"play_count"</span>: <span class="tok-num">0</span>}
+    <span class="tok-kw">try</span>:
+        <span class="tok-kw">with</span> <span class="tok-fn">open</span>(SAVE_PATH, <span class="tok-str">"r"</span>, encoding=<span class="tok-str">"utf-8"</span>) <span class="tok-kw">as</span> f:
+            data = json.<span class="tok-fn">load</span>(f)
+        <span class="tok-com"># 예전 버전 저장 파일에 키가 없을 수도 있으니 기본값으로 보완한다.</span>
+        data.<span class="tok-fn">setdefault</span>(<span class="tok-str">"high_score"</span>, <span class="tok-num">0</span>)
+        data.<span class="tok-fn">setdefault</span>(<span class="tok-str">"play_count"</span>, <span class="tok-num">0</span>)
+        <span class="tok-kw">return</span> data
+    <span class="tok-kw">except</span> (json.JSONDecodeError, OSError):
+        <span class="tok-com"># 파일이 깨져 있어도 프로그램이 죽지 않고 새로 시작할 수 있게 한다.</span>
+        <span class="tok-kw">return</span> {<span class="tok-str">"high_score"</span>: <span class="tok-num">0</span>, <span class="tok-str">"play_count"</span>: <span class="tok-num">0</span>}
+
+
+<span class="tok-kw">class</span> <span class="tok-fn">PlayScene</span>(Scene):
+    TIME_LIMIT = <span class="tok-num">20.0</span>
+
+    <span class="tok-kw">def</span> <span class="tok-fn">__init__</span>(self, save_data):
+        self.save_data = save_data
+        <span class="tok-com"># 새 플레이 세션이 "시작"될 때 정확히 1번만 증가하고 즉시 저장한다.</span>
+        <span class="tok-com"># (재도전으로 다시 PlayScene이 만들어질 때도 여기서 잡힌다)</span>
+        self.save_data[<span class="tok-str">"play_count"</span>] = self.save_data.<span class="tok-fn">get</span>(<span class="tok-str">"play_count"</span>, <span class="tok-num">0</span>) + <span class="tok-num">1</span>
+        <span class="tok-fn">save_save_data</span>(self.save_data)
+        self.player_pos = pygame.<span class="tok-fn">Vector2</span>(WIDTH // <span class="tok-num">2</span>, HEIGHT // <span class="tok-num">2</span>)
+        self.speed = <span class="tok-num">220.0</span>
+        self.score = <span class="tok-num">0</span>
+</code></pre>
+  </div>
+
+  <div class="warn-box">
+    <b>왜 <code>TitleScene</code>이나 <code>GameOverScene</code>에 넣으면 안 되나요?</b> <code>TitleScene.handle_event</code>에 넣으면 SPACE로 시작하는 경우는 잡히지만 R로 재도전하는 경우는 놓칩니다. 반대로 <code>GameOverScene</code>에 넣으면 재도전은 잡히지만 최초 시작은 놓칩니다. 두 곳에 각각 넣으면 코드가 중복되고, 나중에 "플레이 시작"의 세 번째 경로가 생기면 또 빠뜨리기 쉽습니다. <code>PlayScene.__init__</code>은 두 경로가 실제로 합류하는 지점이므로 딱 한 군데만 수정하면 모든 경로를 놓치지 않습니다.
+  </div>
+
+  <div class="info-box">
+    <b>왜 <code>GameOverScene</code>에서 점수를 저장할 때 같이 안 하고, 시작하자마자 즉시 저장하나요?</b> 만약 저장을 게임오버 시점까지 미루면, 플레이 도중 프로그램이 강제 종료되었을 때 그 판의 시도 자체가 기록에서 통째로 사라집니다. &ldquo;시작한 순간&rdquo;을 정확히 세고 싶다면, 시작하는 바로 그 시점에 저장해야 합니다.
+  </div>
+
+  <div class="good-box">
+    <b>검증</b> 헤드리스로 TitleScene &rarr; SPACE(최초 시작) &rarr; 시간 종료 &rarr; GameOverScene &rarr; R(재도전) 순서로 진행시켜본 결과, <code>play_count</code>가 1 &rarr; 2로 정확히 증가했고 매번 <code>savegame.json</code> 파일에도 즉시 반영되는 것을 확인했습니다.
+  </div>
+</section>
+
+
+<footer class="page-footer">
+  대구과학고등학교 Pygame 실습 자료 &middot; 실습 6 생각해보기 예시 답안<br>
+  제작자: 대구과학고등학교 교사 이준구
+</footer>
+
+</main>
+</div>
+
+<script>
+(function(){
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      const wrapper = btn.closest('.code-wrapper');
+      const codeEl = wrapper.querySelector('pre code') || wrapper.querySelector('pre');
+      const text = codeEl.innerText;
+      navigator.clipboard.writeText(text).then(function(){
+        const original = btn.textContent;
+        btn.textContent = '복사됨!';
+        btn.classList.add('copied');
+        setTimeout(function(){
+          btn.textContent = original;
+          btn.classList.remove('copied');
+        }, 1500);
+      });
+    });
+  });
+
+  const navLinks = Array.prototype.slice.call(document.querySelectorAll('.nav-link'));
+  const targets = navLinks.map(function(link){
+    const id = link.getAttribute('href').slice(1);
+    return { link: link, el: document.getElementById(id) };
+  }).filter(function(t){ return !!t.el; });
+
+  let ticking = false;
+  function updateOnScroll(){
+    const scrollY = window.scrollY || window.pageYOffset;
+    const probe = scrollY + window.innerHeight * 0.28;
+    let currentIndex = 0;
+    for (let i = 0; i < targets.length; i++){
+      if (targets[i].el.offsetTop <= probe) currentIndex = i;
+    }
+    targets.forEach(function(t, i){
+      t.link.classList.toggle('active', i === currentIndex);
+    });
+    ticking = false;
+  }
+  window.addEventListener('scroll', function(){
+    if (!ticking){ requestAnimationFrame(updateOnScroll); ticking = true; }
+  });
+  window.addEventListener('resize', updateOnScroll);
+  updateOnScroll();
+})();
+</script>
+
+</body>
+</html>
